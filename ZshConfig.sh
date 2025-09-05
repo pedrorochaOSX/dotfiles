@@ -9,7 +9,12 @@ else
 fi
 
 echo "Installing Oh My Zsh...";
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" &&
+if [ -d "$HOME/.oh-my-zsh" ]; then
+	echo "Oh My Zsh has been already installed."
+else
+  	sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+fi
+
 cat << 'catEND' > ~/.zshrc
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
@@ -131,7 +136,7 @@ alias gdiffs='git diff --stat'
 alias glogf="git log --pretty=format:'%C(red)%h %C(yellow)%cn | %C(yellow)%cd (%cr) %C(reset)%C(white)%s' --date=format:'%a %Y/%m/%d %H:%M:%S'"
 
 if [ -z "$ZELLIJ" ] && [ -z "$SSH_CONNECTION" ] && [[ $- == *i* ]] && command -v zellij >/dev/null; then
-  exec zellij
+  	exec zellij
 fi
 
 export NVM_DIR="$HOME/.nvm"

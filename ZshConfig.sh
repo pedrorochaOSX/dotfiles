@@ -117,6 +117,18 @@ source $ZSH/oh-my-zsh.sh
 alias lsblkk='lsblk -o NAME,TYPE,FSTYPE,FSUSE%,FSAVAIL,SIZE,MOUNTPOINTS'
 alias lzg='lazygit'
 alias lzd='lazydocker'
+alias gac='git add --all && git commit -m'
+alias gch='git checkout'
+alias gchb='git checkout -b'
+alias gbvva='git branch -vva'
+alias gbu='git branch -u'
+alias gbd='git branch -d'
+alias gst='git status -s'
+alias gshow='git show -U0'
+alias gshows='git show --stat'
+alias gdiff='git diff -U0'
+alias gdiffs='git diff --stat'
+alias glogf="git log --pretty=format:'%C(red)%h %C(yellow)%cn | %C(yellow)%cd (%cr) %C(reset)%C(white)%s' --date=format:'%a %Y/%m/%d %H:%M:%S'"
 
 if [ -z "$ZELLIJ" ] && [ -z "$SSH_CONNECTION" ] && [[ $- == *i* ]] && command -v zellij >/dev/null; then
   exec zellij

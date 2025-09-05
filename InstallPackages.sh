@@ -1,0 +1,2 @@
+echo "Installing packages...";
+sudo pacman -S --noconfirm curl wget git github-cli zsh zip networkmanager flatpak docker alacritty zellij gnome-tweaks neovim code lazygit lazydocker wine lutris file-roller vlc htop audacious;

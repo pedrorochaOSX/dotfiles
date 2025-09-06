@@ -1,4 +1,11 @@
+#!/usr/bin/env sh
+
 cd ~/;
+
+# Don't try to re-exec the script under zsh when being piped; just detect current shell
+# and continue. This avoids running zsh-specific code under bash which causes
+# "Oh My Zsh can't be loaded from: bash" errors when the script is piped.
+
 echo "Verifying the default shell..." &&
 if [[ "$SHELL" == "$(which zsh)" ]]; then
     echo "Zsh is the default shell!";
@@ -12,7 +19,10 @@ echo "Installing Oh My Zsh...";
 if [ -d "$HOME/.oh-my-zsh" ]; then
 	echo "Oh My Zsh has been already installed."
 else
-  	sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+	# Prevent the installer from launching zsh or changing the shell automatically
+	# (which can lead to nested shells when this script is piped). See:
+	# https://github.com/ohmyzsh/ohmyzsh
+	RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 fi
 
 cat << 'catEND' > ~/.zshrc
@@ -145,5 +155,10 @@ export NVM_DIR="$HOME/.nvm"
 
 catEND
 
-source ~/.zshrc;
-echo "Please restart your terminal or log out and log back in to apply the changes."
+# Only source the new zsh config if we're running inside zsh; otherwise print instructions.
+if [ -n "$ZSH_VERSION" ]; then
+	source ~/.zshrc;
+	echo "Please restart your terminal or log out and log back in to apply the changes."
+else
+	echo "Zsh configuration written to ~/.zshrc. Start a zsh session (exec zsh) or restart your terminal to apply the changes."
+fi

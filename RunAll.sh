@@ -72,7 +72,21 @@ ask_script() {
 run_script() {
   local script="$1"
   echo "Running $script from GitHub..."
-  curl -sL "$GITHUB_BASE_URL/$script" | bash
+
+  # For Zsh config, execute with zsh (never source into the parent shell).
+  if [[ "$script" == "ZshConfig.sh" ]]; then
+    echo "Executing $script with zsh..."
+    curl -sL "$GITHUB_BASE_URL/$script" | zsh
+
+    # If this process is an interactive zsh, remind the user to reload their config.
+    if [[ -n "${ZSH_VERSION:-}" ]] && [[ $- == *i* ]]; then
+      echo "Zsh config executed in a subprocess. To apply changes in this shell run: source ~/.zshrc"
+    else
+      echo "Zsh config executed. Start a new zsh session or run: exec zsh to use the new config."
+    fi
+  else
+    curl -sL "$GITHUB_BASE_URL/$script" | bash
+  fi
 }
 
 if [[ $NONINTERACTIVE -eq 1 ]]; then

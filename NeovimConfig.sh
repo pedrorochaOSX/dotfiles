@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+
 mkdir -p ~/.config/nvim;
 cat << 'catEND' > ~/.config/nvim/init.lua
 -- Move current line in Normal mode

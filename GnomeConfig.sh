@@ -1,35 +1,99 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
 set -e
 
-URL="https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v101/dash-to-dock@micxgx.gmail.com.zip"
-ZIP_FILE="dash-to-dock@micxgx.gmail.com.zip"
-EXT_DIR="/usr/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com"
-SCHEMA_FILE="org.gnome.shell.extensions.dash-to-dock.gschema.xml"
-SCHEMA_DEST="/usr/share/glib-2.0/schemas/"
 
+download_latest_asset() {
+  repo="$1"
+  pattern="$2"
 
-echo "-> Downloading Dash to Dock extension..."
-wget -q --show-progress -O "$ZIP_FILE" "$URL"
+  echo "-> Querying latest release for $repo..."
+  download_url=$(curl -s "https://api.github.com/repos/$repo/releases/latest" \
+    | sed -n 's/.*"browser_download_url": *"\([^"\\]*\)".*/\1/p' \
+    | grep -E "$pattern" \
+    | head -n1)
 
-echo "-> Creating extension directory: $EXT_DIR"
-sudo mkdir -p "$EXT_DIR"
+  if [ -z "$download_url" ]; then
+    echo "Could not find a matching asset for $repo (pattern: $pattern)"
+    return 1
+  fi
 
-echo "-> Extracting files..."
-sudo unzip -o "$ZIP_FILE" -d "$EXT_DIR"
+  echo "$download_url"
+}
 
-echo "-> Copying schema file (requires sudo)..."
-sudo cp "$EXT_DIR/schemas/$SCHEMA_FILE" "$SCHEMA_DEST"
+install_extension_from_github() {
+  repo="$1"
+  pattern="$2"
+  ext_name="$3"    # directory / extension uuid, e.g. dash-to-dock@micxgx.gmail.com
 
-echo "-> Compiling schemas (requires sudo)..."
-sudo glib-compile-schemas "$SCHEMA_DEST"
+  echo "-> Installing extension $ext_name from $repo (pattern: $pattern)"
 
-echo "-> Cleaning up downloaded archive..."
-rm "$ZIP_FILE"
+  download_url=$(download_latest_asset "$repo" "$pattern") || return 1
 
-echo "  Dash to Dock installation complete!"
+  tmpdir=$(mktemp -d)
+  asset_zip="$tmpdir/asset.zip"
 
-echo "  1/6 - Changing org.gnome.desktop.wm.keybindings";
+  echo "-> Downloading asset..."
+  curl -L -s -o "$asset_zip" "$download_url"
+
+  echo "-> Unpacking to temporary directory..."
+  unzip -q -o "$asset_zip" -d "$tmpdir/unpack" || true
+
+  found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f -name metadata.json -printf '%h\n' | head -n1 || true)
+  if [ -z "$found_dir" ]; then
+    found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f \( -name extension.js -o -name schemas -o -name schemas.gschema.xml \) -printf '%h\n' | head -n1 || true)
+  fi
+  if [ -z "$found_dir" ]; then
+    found_dir="$tmpdir/unpack"
+  fi
+
+  target_dir="$HOME/.local/share/gnome-shell/extensions/$ext_name"
+
+  echo "-> Creating target extension directory: $target_dir"
+  rm -rf "$target_dir" || true
+  mkdir -p "$target_dir"
+
+  echo "-> Copying extension files into $target_dir"
+  cp -a "$found_dir/." "$target_dir/" || true
+
+  if command -v glib-compile-schemas >/dev/null 2>&1; then
+    if [ -d "$target_dir/schemas" ]; then
+      user_schema_dir="$HOME/.local/share/glib-2.0/schemas"
+      mkdir -p "$user_schema_dir"
+      echo "-> Found schemas in extension; copying to $user_schema_dir"
+      find "$target_dir/schemas" -maxdepth 1 -type f \( -name '*.gschema.xml' -o -name '*.xml' \) -exec cp -a {} "$user_schema_dir/" \; || true
+      echo "-> Compiling per-user schemas..."
+      glib-compile-schemas "$user_schema_dir" || echo "Warning: glib-compile-schemas failed"
+      echo "-> Installed user schemas for $ext_name"
+    fi
+  else
+    echo "Note: 'glib-compile-schemas' not found. Install the package that provides it (e.g. libglib2.0-bin) to compile per-user schemas."
+  fi
+
+  rm -rf "$tmpdir"
+
+  echo "-> Installed $ext_name to $target_dir"
+
+  if command -v gnome-extensions >/dev/null 2>&1; then
+    echo "-> Enabling $ext_name..."
+    gnome-extensions enable "$ext_name" || true
+  else
+    echo "Note: install 'gnome-extensions' (gnome-extensions-app) to enable $ext_name automatically."
+  fi
+}
+
+install_extension_from_github "micheleg/dash-to-dock" "dash-to-dock.*\\.zip" "dash-to-dock@micxgx.gmail.com" || \
+  echo "Warning: Dash-to-Dock installation failed or asset not found."
+
+install_extension_from_github "fflewddur/tophat" "tophat.*\\.zip" "tophat@fflewddur.github.io" || \
+  echo "Warning: TopHat installation failed or asset not found."
+
+install_extension_from_github "home-sweet-gnome/dash-to-panel" "dash-to-panel.*\\.zip" "dash-to-panel@jderose9.github.com" || \
+  echo "Warning: Dash-to-Panel installation failed or asset not found."
+
+echo "  GNOME extension installation steps finished."
+
+echo "  gsettings - Changing org.gnome.desktop.wm.keybindings";
 gsettings set org.gnome.desktop.wm.keybindings activate-window-menu "['<Super>w']";
 gsettings set org.gnome.desktop.wm.keybindings always-on-top "[]";
 gsettings set org.gnome.desktop.wm.keybindings begin-move "[]";
@@ -115,14 +179,14 @@ gsettings set org.gnome.desktop.wm.keybindings toggle-maximized "['<Super>e', '<
 gsettings set org.gnome.desktop.wm.keybindings toggle-on-all-workspaces "[]";
 gsettings set org.gnome.desktop.wm.keybindings unmaximize "[]";
 
-echo "  2/6 - Changing org.gnome.mutter.keybindings";
+echo "  gsettings - Changing org.gnome.mutter.keybindings";
 gsettings set org.gnome.mutter.keybindings cancel-input-capture "['<Super><Shift>Escape']";
 gsettings set org.gnome.mutter.keybindings rotate-monitor "['XF86RotateWindows']";
 gsettings set org.gnome.mutter.keybindings switch-monitor "['<Super>p', 'XF86Display']";
 gsettings set org.gnome.mutter.keybindings toggle-tiled-left "['<Super>Left']";
 gsettings set org.gnome.mutter.keybindings toggle-tiled-right "['<Super>Right']";
 
-echo "  3/6 - Changing org.gnome.shell.keybindings";
+echo "  gsettings - Changing org.gnome.shell.keybindings";
 gsettings set org.gnome.shell.keybindings focus-active-notification "[]";
 gsettings set org.gnome.shell.keybindings open-new-window-application-1 "[]";
 gsettings set org.gnome.shell.keybindings open-new-window-application-2 "[]";
@@ -153,7 +217,7 @@ gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>v']";
 gsettings set org.gnome.shell.keybindings toggle-overview "[]";
 gsettings set org.gnome.shell.keybindings toggle-quick-settings "['<Super>b']";
 
-echo "  4/6 - Changing org.gnome.settings-daemon.plugins.media-keys";
+echo "  gsettings - Changing org.gnome.settings-daemon.plugins.media-keys";
 gsettings set org.gnome.settings-daemon.plugins.media-keys battery-status "[]";
 gsettings set org.gnome.settings-daemon.plugins.media-keys battery-status-static "['XF86Battery']";
 gsettings set org.gnome.settings-daemon.plugins.media-keys calculator "[]";
@@ -256,7 +320,7 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys volume-up-static "[]"
 gsettings set org.gnome.settings-daemon.plugins.media-keys www "[]";
 gsettings set org.gnome.settings-daemon.plugins.media-keys www-static "['XF86WWW']";
 
-echo "  5/6 - Changing org.gnome.shell.extensions.dash-to-dock";
+echo "  gsettings - Changing org.gnome.shell.extensions.dash-to-dock";
 gsettings set org.gnome.shell.extensions.dash-to-dock activate-single-window true;
 gsettings set org.gnome.shell.extensions.dash-to-dock always-center-icons false;
 gsettings set org.gnome.shell.extensions.dash-to-dock animation-time 0.1801;
@@ -365,7 +429,7 @@ gsettings set org.gnome.shell.extensions.dash-to-dock transparency-mode 'DEFAULT
 gsettings set org.gnome.shell.extensions.dash-to-dock unity-backlit-items false;
 gsettings set org.gnome.shell.extensions.dash-to-dock workspace-agnostic-urgent-windows true;
 
-echo "  6/6 - Changing org.gnome.desktop.peripherals.keyboard";
+echo "  gsettings - Changing org.gnome.desktop.peripherals.keyboard";
 gsettings set org.gnome.desktop.peripherals.keyboard delay "uint32 250";
 gsettings set org.gnome.desktop.peripherals.keyboard repeat true
 gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval "uint32 15";

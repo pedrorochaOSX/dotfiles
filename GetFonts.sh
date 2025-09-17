@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
 LATEST_VERSION="v3.4.0"
 DOWNLOAD_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/${LATEST_VERSION}/JetBrainsMono.zip"

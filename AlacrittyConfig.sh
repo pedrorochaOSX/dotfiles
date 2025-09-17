@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+
 cat <<'catEND' > ~/.alacritty.toml
 [window]
 	padding = { x = 2, y = 2 }

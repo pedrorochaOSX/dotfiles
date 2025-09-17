@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 GITHUB_BASE_URL="https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main"
 
 declare -A SCRIPT_DESCRIPTIONS=(
   ["InstallPackages.sh"]="Install pedrorochaosx favorite packages"
-  ["UpdateGitConfig.sh"]="Update git configuration"
+  ["GitHubAuth.sh"]="Login into GitHub"
   ["ZshConfig.sh"]="Configure zsh shell"
   ["AlacrittyConfig.sh"]="Configure Alacritty terminal"
   ["ZellijConfig.sh"]="Configure Zellij"
@@ -16,7 +17,7 @@ declare -A SCRIPT_DESCRIPTIONS=(
 
 SCRIPTS=(
   InstallPackages.sh
-  UpdateGitConfig.sh
+  GitHubAuth.sh
   ZshConfig.sh
   AlacrittyConfig.sh
   ZellijConfig.sh
@@ -72,21 +73,7 @@ ask_script() {
 run_script() {
   local script="$1"
   echo "Running $script from GitHub..."
-
-  # For Zsh config, execute with zsh (never source into the parent shell).
-  if [[ "$script" == "ZshConfig.sh" ]]; then
-    echo "Executing $script with zsh..."
-    curl -sL "$GITHUB_BASE_URL/$script" | zsh
-
-    # If this process is an interactive zsh, remind the user to reload their config.
-    if [[ -n "${ZSH_VERSION:-}" ]] && [[ $- == *i* ]]; then
-      echo "Zsh config executed in a subprocess. To apply changes in this shell run: source ~/.zshrc"
-    else
-      echo "Zsh config executed. Start a new zsh session or run: exec zsh to use the new config."
-    fi
-  else
-    curl -sL "$GITHUB_BASE_URL/$script" | bash
-  fi
+  curl -sL "$GITHUB_BASE_URL/$script" | bash
 }
 
 if [[ $NONINTERACTIVE -eq 1 ]]; then

@@ -22,7 +22,7 @@ curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/ma
 
 Update git configuration:
 ```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/UpdateGitConfig.sh" | bash
+curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/GitHubAuth.sh" | bash
 ```
 
 Configure zsh:

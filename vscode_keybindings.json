@@ -72,7 +72,7 @@
 	},
 	{
 		"key": "ctrl+j",
-		"command": "workbench.action.nextSideBarView",
+		"command": "workbench.action.nextSideBarView"
 	},
 	{
 		"key": "ctrl+k",
@@ -124,7 +124,7 @@
 	},
 	{
 		"key": "ctrl+i",
-		"command": "workbench.action.files.openFile",
+		"command": "workbench.action.files.openFile"
 	},
 	{
 		"key": "ctrl+o",
@@ -149,7 +149,7 @@
 	},
 	{
 		"key": "ctrl+q ctrl+1",
-		"command": "workbench.action.closeFolder",
+		"command": "workbench.action.closeFolder"
 	},
 	{
 		"key": "ctrl+tab",

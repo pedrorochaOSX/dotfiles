@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+
 cat <<'catEND' > ~/.config/zellij/config.kdl
 keybinds clear-defaults=true {
     locked {

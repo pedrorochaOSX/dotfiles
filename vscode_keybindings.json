@@ -20,11 +20,6 @@
 		"when": "editorTextFocus && !editorReadonly"
 	},
 	{
-		"key": "ctrl+space",
-		"command": "workbench.action.closeQuickOpen",
-		"when": "inQuickOpen"
-	},
-	{
 		"key": "ctrl+backspace",
 		"command": "deleteWordLeft"
 	},
@@ -111,8 +106,8 @@
 	},
 	{
 		"key": "ctrl+r",
-	    "command": "editor.action.indentLines",
-	    "when": "editorTextFocus && !editorReadonly"
+		"command": "editor.action.indentLines",
+		"when": "editorTextFocus && !editorReadonly"
 	},
 	{
 		"key": "ctrl+shift+r",
@@ -131,13 +126,31 @@
 		"command": "workbench.action.files.openFolder"
 	},
 	{
-		"key": "ctrl+space",
+		"key": "ctrl+space ctrl+space",
+		"command": "workbench.action.closeQuickOpen",
+		"when": "inQuickOpen"
+	},
+	{
+		"key": "ctrl+space ctrl+space",
 		"command": "workbench.action.quickOpen"
 	},
 	{
-		"key": "ctrl+space",
+		"key": "ctrl+space ctrl+space",
 		"command": "workbench.action.quickOpenNavigateNextInFilePicker",
 		"when": "inFilesPicker && inQuickOpen"
+	},
+	{
+		"key": "ctrl+space ctrl+f",
+		"command": "workbench.view.search"
+	},
+	{
+		"key": "ctrl+space ctrl+c",
+		"command": "workbench.action.chat.open",
+		"when": "!chatSetupDisabled && !chatSetupHidden"
+	},
+	{
+		"key": "ctrl+space ctrl+e",
+		"command": "workbench.explorer.fileView.focus"
 	},
 	{
 		"key": "ctrl+w",
@@ -149,7 +162,7 @@
 	},
 	{
 		"key": "ctrl+q ctrl+1",
-		"command": "workbench.action.closeFolder"
+		"command": "workbench.action.closeFolder",
 	},
 	{
 		"key": "ctrl+tab",
@@ -190,12 +203,12 @@
 		"command": "workbench.action.togglePanel"
 	},
 	{
-		"key": "ctrl+;",
+		"key": "ctrl+oem_6",
 		"command": "chatEditor.action.navigateNext",
 		"when": "chatEdits.hasEditorModifications && chatIsEnabled && editorFocus || chatEdits.hasEditorModifications && chatIsEnabled && notebookCellListFocused"
 	},
 	{
-		"key": "ctrl+p",
+		"key": "ctrl+oem_4",
 		"command": "chatEditor.action.navigatePrevious",
 		"when": "chatEdits.hasEditorModifications && chatIsEnabled && editorFocus || chatEdits.hasEditorModifications && chatIsEnabled && notebookCellListFocused"
 	},
@@ -214,6 +227,26 @@
 	{
 		"key": "ctrl+shift+9",
 		"command": "workbench.action.openGlobalKeybindingsFile"
+	},
+	{
+		"key": "ctrl+y",
+		"command": "chatEditor.action.acceptHunk",
+		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookCellListFocused && !chatEdits.isRequestInProgress"
+	},
+	{
+		"key": "ctrl+shift+y",
+		"command": "chatEditor.action.accept",
+		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookEditorFocused && !chatEdits.isRequestInProgress"
+	},
+	{
+		"key": "ctrl+n",
+		"command": "chatEditor.action.undoHunk",
+		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookCellListFocused && !chatEdits.isRequestInProgress"
+	},
+	{
+		"key": "ctrl+shift+n",
+		"command": "chatEditor.action.reject",
+		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookEditorFocused && !chatEdits.isRequestInProgress"
 	},
 	{
 		"key": "ctrl+1",
@@ -2764,18 +2797,8 @@
 	},
 	{
 		"key": "ctrl+y",
-		"command": "chatEditor.action.acceptHunk",
-		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookCellListFocused && !chatEdits.isRequestInProgress"
-	},
-	{
-		"key": "ctrl+y",
 		"command": "-chatEditor.action.acceptHunk",
 		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookCellListFocused && !chatEdits.isRequestInProgress"
-	},
-	{
-		"key": "ctrl+shift+y",
-		"command": "chatEditor.action.accept",
-		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookEditorFocused && !chatEdits.isRequestInProgress"
 	},
 	{
 		"key": "ctrl+shift+y",
@@ -2784,18 +2807,33 @@
 	},
 	{
 		"key": "ctrl+n",
-		"command": "chatEditor.action.undoHunk",
-		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookCellListFocused && !chatEdits.isRequestInProgress"
-	},
-	{
-		"key": "ctrl+n",
 		"command": "-chatEditor.action.undoHunk",
 		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookCellListFocused && !chatEdits.isRequestInProgress"
 	},
 	{
-		"key": "ctrl+shift+n",
-		"command": "chatEditor.action.reject",
-		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookEditorFocused && !chatEdits.isRequestInProgress"
+		"key": "ctrl+alt+oem_period",
+		"command": "-github.copilot.chat.rerunWithCopilotDebug",
+		"when": "github.copilot-chat.activated && terminalFocus && terminalShellIntegrationEnabled && !terminalAltBufferActive"
+	},
+	{
+		"key": "ctrl+alt+i",
+		"command": "-workbench.action.chat.open",
+		"when": "!chatSetupDisabled && !chatSetupHidden"
+	},
+	{
+		"key": "ctrl+enter",
+		"command": "-chat.inlineResourceAnchor.openToSide",
+		"when": "chatAttachmentResource"
+	},
+	{
+		"key": "ctrl+alt+oem_period",
+		"command": "-workbench.action.chat.openModelPicker",
+		"when": "chatIsEnabled && inChatInput"
+	},
+	{
+		"key": "ctrl+shift+i",
+		"command": "-workbench.action.chat.openAgent",
+		"when": "config.chat.agent.enabled && !chatSetupDisabled && !chatSetupHidden"
 	},
 	{
 		"key": "ctrl+shift+n",

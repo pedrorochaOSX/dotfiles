@@ -182,4 +182,9 @@
 	"update.mode": "none",
 
 	"breadcrumbs.enabled": false,
+	"editor.lineNumbers": "relative",
+	"git.enableStatusBarSync": false,
+	"workbench.activityBar.location": "default",
+	"workbench.editor.showTabs": "multiple",
+	"editor.tabSize": 2
 }

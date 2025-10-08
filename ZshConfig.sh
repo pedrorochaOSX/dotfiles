@@ -8,7 +8,7 @@ if [[ "$SHELL" == "$(which zsh)" ]]; then
 else
     echo "Zsh is not the default shell." &&
     echo "Setting Zsh as the default shell..." &&
-	sudo chsh -s $(which zsh) </dev/tty;
+	sudo chsh -s $(which zsh) $USER </dev/tty;
 fi
 
 echo "Installing Oh My Zsh...";

@@ -86,7 +86,7 @@
 		"command": "explorer.newFolder"
 	},
 	{
-		"key": "ctrl+r",
+		"key": "r",
 		"command": "renameFile",
 		"when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
 	},
@@ -102,11 +102,6 @@
 	{
 		"key": "ctrl+e",
 		"command": "editor.action.outdentLines",
-		"when": "editorTextFocus && !editorReadonly"
-	},
-	{
-		"key": "ctrl+r",
-		"command": "editor.action.indentLines",
 		"when": "editorTextFocus && !editorReadonly"
 	},
 	{
@@ -151,6 +146,11 @@
 	{
 		"key": "ctrl+space ctrl+e",
 		"command": "workbench.explorer.fileView.focus"
+	},
+	{
+		"key": "ctrl+space ctrl+a",
+		"command": "inlineChat.start",
+		"when": "editorFocus && inlineChatHasEditsAgent && inlineChatPossible && !editorReadonly && !editorSimpleInput || editorFocus && inlineChatHasProvider && inlineChatPossible && !editorReadonly && !editorSimpleInput"
 	},
 	{
 		"key": "ctrl+w",
@@ -2839,5 +2839,65 @@
 		"key": "ctrl+shift+n",
 		"command": "-chatEditor.action.reject",
 		"when": "chatEdits.hasEditorModifications && editorFocus && !chatEdits.isRequestInProgress || chatEdits.hasEditorModifications && notebookEditorFocused && !chatEdits.isRequestInProgress"
+	},
+	{
+		"key": "ctrl+s",
+		"command": "-extension.vim_ctrl+s",
+		"when": "editorTextFocus && vim.active && vim.use<C-s> && !inDebugRepl"
+	},
+	{
+		"key": "ctrl+i",
+		"command": "-workbench.action.chat.startVoiceChat",
+		"when": "chatIsEnabled && hasSpeechProvider && inChatInput && !chatSessionRequestInProgress && !editorFocus && !notebookEditorFocused && !scopedVoiceChatGettingReady && !speechToTextInProgress || chatIsEnabled && hasSpeechProvider && inlineChatFocused && !chatSessionRequestInProgress && !editorFocus && !notebookEditorFocused && !scopedVoiceChatGettingReady && !speechToTextInProgress"
+	},
+	{
+		"key": "escape",
+		"command": "-workbench.action.chat.stopListening",
+		"when": "voiceChatInProgress && scopedVoiceChatInProgress == 'editor' || voiceChatInProgress && scopedVoiceChatInProgress == 'inline' || voiceChatInProgress && scopedVoiceChatInProgress == 'quick' || voiceChatInProgress && scopedVoiceChatInProgress == 'view'"
+	},
+	{
+		"key": "ctrl+i",
+		"command": "-workbench.action.chat.stopListeningAndSubmit",
+		"when": "inChatInput && voiceChatInProgress && scopedVoiceChatInProgress == 'editor' || inChatInput && voiceChatInProgress && scopedVoiceChatInProgress == 'inline' || inChatInput && voiceChatInProgress && scopedVoiceChatInProgress == 'quick' || inChatInput && voiceChatInProgress && scopedVoiceChatInProgress == 'view' || inlineChatFocused && voiceChatInProgress && scopedVoiceChatInProgress == 'editor' || inlineChatFocused && voiceChatInProgress && scopedVoiceChatInProgress == 'inline' || inlineChatFocused && voiceChatInProgress && scopedVoiceChatInProgress == 'quick' || inlineChatFocused && voiceChatInProgress && scopedVoiceChatInProgress == 'view'"
+	},
+	{
+		"key": "ctrl+space ctrl+a",
+		"command": "inlineChat.start",
+		"when": "editorFocus && inlineChatHasEditsAgent && inlineChatPossible && !editorReadonly && !editorSimpleInput || editorFocus && inlineChatHasProvider && inlineChatPossible && !editorReadonly && !editorSimpleInput"
+	},
+	{
+		"key": "ctrl+i",
+		"command": "-inlineChat.start",
+		"when": "editorFocus && inlineChatHasEditsAgent && inlineChatPossible && !editorReadonly && !editorSimpleInput || editorFocus && inlineChatHasProvider && inlineChatPossible && !editorReadonly && !editorSimpleInput"
+	},
+	{
+		"key": "ctrl+k i",
+		"command": "-inlineChat.startWithCurrentLine",
+		"when": "inlineChatHasProvider && !editorReadonly && !inlineChatVisible"
+	},
+	{
+		"key": "ctrl+i",
+		"command": "-inlineChat.startWithCurrentLine",
+		"when": "inlineChatHasProvider && inlineChatShowingHint && !editorReadonly && !inlineChatVisible"
+	},
+	{
+		"key": "ctrl+alt+enter",
+		"command": "-notebook.cell.quitEdit",
+		"when": "inputFocus && notebookEditorFocused && !inlineChatFocused && notebookCellType == 'markup'"
+	},
+	{
+		"key": "ctrl+z",
+		"command": "-inlineChat.unstash",
+		"when": "inlineChatHasStashedSession && !editorReadonly"
+	},
+	{
+		"key": "ctrl+i",
+		"command": "-workbench.action.chat.holdToVoiceChatInChatView",
+		"when": "chatIsEnabled && hasSpeechProvider && !chatSessionRequestInProgress && !editorFocus && !inChatInput && !inlineChatFocused && !notebookEditorFocused && !searchViewletFocus"
+	},
+	{
+		"key": "ctrl+r",
+		"command": "-workbench.action.terminal.chat.rerunRequest",
+		"when": "chatIsEnabled && terminalChatFocus && terminalHasBeenCreated && !terminalChatActiveRequest || chatIsEnabled && terminalChatFocus && terminalProcessSupported && !terminalChatActiveRequest"
 	}
 ]

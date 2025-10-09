@@ -36,21 +36,8 @@
 		"command": "redo"
 	},
 	{
-		"key": "ctrl+d ctrl+c",
-		"command": "editor.action.commentLine"
-	},
-	{
 		"key": "ctrl+g",
 		"command": "expandLineSelection"
-	},
-	{
-		"key": "ctrl+d ctrl+d",
-		"command": "editor.action.deleteLines",
-		"when": "textInputFocus && !editorReadonly"
-	},
-	{
-		"key": "ctrl+d ctrl+w",
-		"command": "deleteInsideWord"
 	},
 	{
 		"key": "ctrl+f",
@@ -58,7 +45,7 @@
 		"when": "editorFocus || editorIsOpen"
 	},
 	{
-		"key": "ctrl+u",
+		"key": "ctrl+space ctrl+u",
 		"command": "workbench.files.action.compareFileWith"
 	},
 	{
@@ -89,10 +76,6 @@
 		"key": "r",
 		"command": "renameFile",
 		"when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
-	},
-	{
-		"key": "ctrl+/",
-		"command": "workbench.action.gotoLine"
 	},
 	{
 		"key": "ctrl+b",
@@ -175,11 +158,11 @@
 		"when": "inEditorsPicker && inQuickOpen"
 	},
 	{
-		"key": "ctrl+oem_comma",
+		"key": "alt+oem_minus",
 		"command": "workbench.action.decreaseViewWidth"
 	},
 	{
-		"key": "ctrl+oem_period",
+		"key": "alt+oem_plus",
 		"command": "workbench.action.increaseViewWidth"
 	},
 	{
@@ -2899,5 +2882,20 @@
 		"key": "ctrl+r",
 		"command": "-workbench.action.terminal.chat.rerunRequest",
 		"when": "chatIsEnabled && terminalChatFocus && terminalHasBeenCreated && !terminalChatActiveRequest || chatIsEnabled && terminalChatFocus && terminalProcessSupported && !terminalChatActiveRequest"
+	},
+	{
+		"key": "ctrl+d",
+		"command": "-notebook.addFindMatchToSelection",
+		"when": "config.notebook.multiCursor.enabled && notebookCellEditorFocused && activeEditor == 'workbench.editor.notebook'"
+	},
+	{
+		"key": "ctrl+oem_2",
+		"command": "-terminalSuggestToggleExplainMode",
+		"when": "terminalFocus && terminalHasBeenCreated && terminalIsOpen && terminalSuggestWidgetVisible || terminalFocus && terminalIsOpen && terminalProcessSupported && terminalSuggestWidgetVisible"
+	},
+	{
+		"key": "ctrl+oem_2",
+		"command": "-github.copilot.acceptCursorPanelSolution",
+		"when": "github.copilot.panelVisible && activeWebviewPanelId == 'GitHub Copilot Suggestions'"
 	}
 ]

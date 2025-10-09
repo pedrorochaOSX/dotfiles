@@ -140,11 +140,11 @@
 		"command": "workbench.action.closeActiveEditor"
 	},
 	{
-		"key": "ctrl+q ctrl+a",
+		"key": "ctrl+space ctrl+w",
 		"command": "workbench.action.closeAllEditors"
 	},
 	{
-		"key": "ctrl+q ctrl+1",
+		"key": "ctrl+space ctrl+q",
 		"command": "workbench.action.closeFolder",
 	},
 	{

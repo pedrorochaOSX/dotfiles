@@ -1073,8 +1073,8 @@ echo "  gsettings set org.gnome.shell.extensions.dash-to-panel panel-element-pos
 gsettings set org.gnome.shell.extensions.dash-to-panel panel-element-positions-monitors-sync true;
 echo "  gsettings set org.gnome.shell.extensions.dash-to-panel panel-lengths '{"BOE-0x00000000":100}'";
 gsettings set org.gnome.shell.extensions.dash-to-panel panel-lengths '{"BOE-0x00000000":100}';
-echo "  gsettings set org.gnome.shell.extensions.dash-to-panel panel-position 'BOTTOM'";
-gsettings set org.gnome.shell.extensions.dash-to-panel panel-position 'BOTTOM';
+echo "  gsettings set org.gnome.shell.extensions.dash-to-panel panel-position 'TOP'";
+gsettings set org.gnome.shell.extensions.dash-to-panel panel-position 'TOP';
 echo "  gsettings set org.gnome.shell.extensions.dash-to-panel panel-positions '{"BOE-0x00000000":"TOP","GSM-0x01010101":"TOP"}'";
 gsettings set org.gnome.shell.extensions.dash-to-panel panel-positions '{"BOE-0x00000000":"TOP","GSM-0x01010101":"TOP"}';
 echo "  gsettings set org.gnome.shell.extensions.dash-to-panel panel-side-margins 0";
@@ -1290,4 +1290,4 @@ gsettings set org.gnome.shell.extensions.tophat show-net true;
 echo "  gsettings set org.gnome.shell.extensions.tophat use-system-accent false";
 gsettings set org.gnome.shell.extensions.tophat use-system-accent false;
 
-echo "  ✅ GNOME Configuration Complete!"
+echo "  GNOME Configuration Complete!"

@@ -18,6 +18,37 @@ else
 	RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 fi
 
+echo "Installing custom zsh theme...";
+mkdir -p ~/.oh-my-zsh/custom/themes
+cat << 'catEND' > ~/.oh-my-zsh/custom/themes/pedrorochaosx.zsh-theme
+# pedrorochaosx-zsh-theme
+# Use with a dark background and 256-color terminal!
+
+function virtualenv_info {
+    [ $CONDA_DEFAULT_ENV ] && echo "($CONDA_DEFAULT_ENV) "
+    [ $VIRTUAL_ENV ] && echo '('`basename $VIRTUAL_ENV`') '
+}
+
+function prompt_char {
+    echo ''
+}
+
+function box_name {
+  local box="${SHORT_HOST:-$HOST}"
+  [[ -f ~/.box-name ]] && box="$(< ~/.box-name)"
+  echo "${box:gs/%/%%}"
+}
+
+PROMPT="%B%{$FG[208]%}%n %{$FG[239]%}at %{$FG[220]%}%D{%Y-%m-%d} %* %{$FG[239]%}in %{$FG[226]%}%~%{$reset_color%}\$(git_prompt_info)\$(ruby_prompt_info) \$(virtualenv_info)>%b "
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%B%{$FG[239]%}->%{$FG[255]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}%b"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$FG[202]%} x"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$FG[040]%}"
+ZSH_THEME_RUBY_PROMPT_PREFIX=" %{$FG[239]%}using%{$FG[243]%} ‹"
+ZSH_THEME_RUBY_PROMPT_SUFFIX="›%{$reset_color%}"
+catEND
+
 cat << 'catEND' > ~/.zshrc
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
@@ -30,7 +61,7 @@ export PATH="$HOME/.local/bin:$PATH"
 # load a random theme each time Oh My Zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="fino-time"
+ZSH_THEME="pedrorochaosx"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -122,21 +153,16 @@ source $ZSH/oh-my-zsh.sh
 
 # For a full list of active aliases, run `alias`.
 
-alias lsblkk='lsblk -o NAME,TYPE,FSTYPE,FSUSE%,FSAVAIL,SIZE,MOUNTPOINTS'
+alias lsblkk='echo "lsblk -o NAME,TYPE,FSTYPE,FSUSE%,FSAVAIL,SIZE,MOUNTPOINTS"; lsblk -o NAME,TYPE,FSTYPE,FSUSE%,FSAVAIL,SIZE,MOUNTPOINTS'
 alias lzg='lazygit'
 alias lzd='lazydocker'
 alias gac='git add --all && git commit -m'
-alias gch='git checkout'
-alias gchb='git checkout -b'
-alias gbvva='git branch -vva'
-alias gbu='git branch -u'
-alias gbd='git branch -d'
 alias gst='git status -s'
-alias gshow='git show -U0'
-alias gshows='git show --stat'
-alias gdiff='git diff -U0'
-alias gdiffs='git diff --stat'
-alias glogf="git log --pretty=format:'%C(red)%h %C(yellow)%cn | %C(yellow)%cd (%cr) %C(reset)%C(white)%s' --date=format:'%a %Y/%m/%d %H:%M:%S'"
+alias gshow='echo "git show -U0"; git show -U0'
+alias gshows='echo "git show --stat"; git show --stat'
+alias gdiff='echo "git diff -U0"; git diff -U0'
+alias gdiffs='echo "git diff --stat"; git diff --stat'
+alias glog="git log --pretty=format:'%C(red)%h %C(yellow)%cn | %C(yellow)%cd (%cr) %C(reset)%C(white)%s' --date=format:'%a %Y/%m/%d %H:%M:%S'"
 
 if [ -z "$ZELLIJ" ] && [ -z "$SSH_CONNECTION" ] && [[ $- == *i* ]] && command -v zellij >/dev/null; then
   	exec zellij

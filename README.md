@@ -1,46 +1,33 @@
-# pedrorochaosx dotfiles
+# dotfiles
 
-## Quick Setup (Interactive)
-Run all configuration scripts interactively:
+Arch Linux + GNOME configuration dotfiles
+
+## Quick Setup
+
+Run all configuration scripts:
 ```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/RunAll.sh" | bash
+bash <(curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/RunAll.sh")
 ```
 
-## Quick Setup (Non-interactive)
-Run all configuration scripts without prompts:
+Or non-interactive:
 ```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/RunAll.sh" | bash -s -- --yes
+bash <(curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/RunAll.sh") --yes
 ```
 
-## Individual Scripts
-You can also run individual scripts if needed:
+## What's Included
 
-Install packages:
-```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/InstallPackages.sh" | bash
-```
+- **Packages**: Install system packages from `packages.txt`
+- **Zsh**: Oh My Zsh + custom theme + aliases
+- **Alacritty**: Terminal configuration
+- **Neovim**: LazyVim setup with plugins
+- **GNOME**: Desktop settings + extensions (dash-to-panel, tophat)
+- **Git**: GitHub authentication setup
 
-Update git configuration:
-```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/GitHubAuth.sh" | bash
-```
+## Local Installation
 
-Configure zsh:
+Clone and run locally:
 ```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/ZshConfig.sh" | bash
-```
-
-Configure Alacritty terminal:
-```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/AlacrittyConfig.sh" | bash
-```
-
-Configure Neovim:
-```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/NeovimConfig.sh" | bash
-```
-
-Update GNOME settings:
-```bash
-curl -sL "https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/GnomeConfig.sh" | bash
+git clone https://github.com/pedrorochaOSX/dotfiles.git
+cd dotfiles
+./RunAllLocal.sh
 ```

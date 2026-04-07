@@ -12,14 +12,11 @@ require_command() {
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PACKAGES_FILE="$SCRIPT_DIR/packages.txt"
-
-if [ ! -f "$PACKAGES_FILE" ]; then
-  echo "Error: packages file not found: $PACKAGES_FILE"
-  exit 1
-fi
+GITHUB_PACKAGES_URL="https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main/packages.txt"
 
 require_command dnf
 require_command rpm
+require_command curl
 
 SUDO=""
 if [ "$(id -u)" -ne 0 ]; then
@@ -28,17 +25,29 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 clean_list_file=$(mktemp)
-trap 'rm -f "$clean_list_file"' EXIT
+packages_input_file=$(mktemp)
+trap 'rm -f "$clean_list_file" "$packages_input_file"' EXIT
+
+if [ -f "$PACKAGES_FILE" ]; then
+  echo "-> Using local packages file: $PACKAGES_FILE"
+  cp "$PACKAGES_FILE" "$packages_input_file"
+else
+  echo "-> Local packages file not found, downloading from GitHub..."
+  if ! curl -fsSL "$GITHUB_PACKAGES_URL" -o "$packages_input_file"; then
+    echo "Error: Could not load packages from local file or GitHub"
+    exit 1
+  fi
+fi
 
 # Keep only non-empty, non-comment lines.
-grep -E '^[[:space:]]*[^#[:space:]]' "$PACKAGES_FILE" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' > "$clean_list_file"
+grep -E '^[[:space:]]*[^#[:space:]]' "$packages_input_file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' > "$clean_list_file"
 
 already_installed=0
 installed_now=0
 failed_count=0
 failed_pkgs=""
 
-echo "-> Installing packages from $PACKAGES_FILE using dnf"
+echo "-> Installing packages from packages.txt using dnf"
 
 while IFS= read -r pkg; do
   [ -z "$pkg" ] && continue

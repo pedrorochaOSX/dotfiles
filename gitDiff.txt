@@ -1,0 +1,1207 @@
+diff --git a/AlacrittyConfig.sh b/AlacrittyConfig.sh
+index fb6fad6..0f67aac 100755
+--- a/AlacrittyConfig.sh
++++ b/AlacrittyConfig.sh
+@@ -3 +3 @@
+-cat <<'catEND' > ~/.alacritty.toml
++cat <<'EOF' > ~/.alacritty.toml
+@@ -29 +29 @@ cat <<'catEND' > ~/.alacritty.toml
+-catEND
+\ No newline at end of file
++EOF
+\ No newline at end of file
+diff --git a/GnomeConfig.sh b/GnomeConfig.sh
+index fee1849..0e41b91 100755
+--- a/GnomeConfig.sh
++++ b/GnomeConfig.sh
+@@ -5 +5,39 @@ set -e
+-install_extension_from_local_zip() {
++require_command() {
++  cmd="$1"
++  if ! command -v "$cmd" >/dev/null 2>&1; then
++    echo "Error: Required command not found: $cmd"
++    exit 1
++  fi
++}
++
++detect_shell_versions() {
++  full_version=$(gnome-shell --version 2>/dev/null | sed -n 's/^GNOME Shell \([0-9][0-9.]*\).*$/\1/p')
++  if [ -z "$full_version" ]; then
++    echo "Error: Could not detect GNOME Shell version"
++    exit 1
++  fi
++
++  major_version=$(printf '%s' "$full_version" | cut -d'.' -f1)
++  SHELL_VERSION_CANDIDATES="$full_version $major_version"
++  echo "-> GNOME Shell version detected: $full_version (candidates: $SHELL_VERSION_CANDIDATES)"
++}
++
++download_latest_ego_zip() {
++  ext_uuid="$1"
++  out_zip="$2"
++
++  for shell_version in $SHELL_VERSION_CANDIDATES; do
++    url="https://extensions.gnome.org/download-extension/${ext_uuid}.shell-extension.zip?shell_version=${shell_version}"
++    echo "-> Trying latest $ext_uuid for shell version $shell_version"
++
++    if curl -fL -sS "$url" -o "$out_zip"; then
++      DOWNLOADED_SHELL_VERSION="$shell_version"
++      return 0
++    fi
++  done
++
++  echo "Error: Could not download $ext_uuid from extensions.gnome.org"
++  return 1
++}
++
++install_extension_from_zip() {
+@@ -7 +45 @@ install_extension_from_local_zip() {
+-  ext_name="$2"    # extension uuid, e.g. dash-to-dock@micxgx.gmail.com
++  ext_uuid="$2"
+@@ -14,2 +51,0 @@ install_extension_from_local_zip() {
+-  echo "-> Installing extension $ext_name from local zip: $zip_file"
+-
+@@ -17,3 +52,0 @@ install_extension_from_local_zip() {
+-  
+-  echo "-> Unpacking to temporary directory..."
+-  unzip -q -o "$zip_file" -d "$tmpdir/unpack" || true
+@@ -21,5 +54,4 @@ install_extension_from_local_zip() {
+-  # Find the directory containing metadata.json or extension.js
+-  found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f -name metadata.json -printf '%h\n' | head -n1 || true)
+-  if [ -z "$found_dir" ]; then
+-    found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f \( -name extension.js -o -name schemas -o -name schemas.gschema.xml \) -printf '%h\n' | head -n1 || true)
+-  fi
++  echo "-> Unpacking $ext_uuid..."
++  unzip -q -o "$zip_file" -d "$tmpdir/unpack"
++
++  found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f -name metadata.json -printf '%h\n' | head -n1)
+@@ -30 +62 @@ install_extension_from_local_zip() {
+-  target_dir="$HOME/.local/share/gnome-shell/extensions/$ext_name"
++  target_dir="$HOME/.local/share/gnome-shell/extensions/$ext_uuid"
+@@ -32,2 +64 @@ install_extension_from_local_zip() {
+-  echo "-> Creating target extension directory: $target_dir"
+-  rm -rf "$target_dir" || true
++  rm -rf "$target_dir"
+@@ -34,0 +66 @@ install_extension_from_local_zip() {
++  cp -a "$found_dir/." "$target_dir/"
+@@ -36,8 +68,6 @@ install_extension_from_local_zip() {
+-  echo "-> Copying extension files into $target_dir"
+-  cp -a "$found_dir/." "$target_dir/" || true
+-
+-  rm -rf "$tmpdir"
+-
+-  echo "-> Installed $ext_name to $target_dir"
+-  echo "-> Extension will be available after restarting GNOME Shell (Alt+F2, type 'r', press Enter)"
+-}
++  metadata_file="$target_dir/metadata.json"
++  if [ ! -f "$metadata_file" ]; then
++    rm -rf "$tmpdir"
++    echo "Error: metadata.json not found for $ext_uuid after installation"
++    return 1
++  fi
+@@ -45,3 +75,2 @@ install_extension_from_local_zip() {
+-download_latest_asset() {
+-  repo="$1"
+-  pattern="$2"
++  installed_uuid=$(sed -n 's/.*"uuid"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$metadata_file" | head -n1)
++  installed_version=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$metadata_file" | head -n1)
+@@ -49,5 +78 @@ download_latest_asset() {
+-  echo "-> Querying latest release for $repo..." >&2
+-  download_url=$(curl -s "https://api.github.com/repos/$repo/releases/latest" \
+-    | sed -n 's/.*"browser_download_url": *"\([^"\\]*\)".*/\1/p' \
+-    | grep -E "$pattern" \
+-    | head -n1)
++  rm -rf "$tmpdir"
+@@ -55,2 +80,2 @@ download_latest_asset() {
+-  if [ -z "$download_url" ]; then
+-    echo "Could not find a matching asset for $repo (pattern: $pattern)" >&2
++  if [ "$installed_uuid" != "$ext_uuid" ]; then
++    echo "Error: Installed UUID mismatch. Expected $ext_uuid, got $installed_uuid"
+@@ -60 +85,5 @@ download_latest_asset() {
+-  echo "$download_url"
++  if [ -n "$installed_version" ]; then
++    echo "-> Installed $ext_uuid version $installed_version"
++  else
++    echo "-> Installed $ext_uuid (version not declared in metadata)"
++  fi
+@@ -63,8 +92,2 @@ download_latest_asset() {
+-install_extension_from_github() {
+-  repo="$1"
+-  pattern="$2"
+-  ext_name="$3"    # directory / extension uuid, e.g. dash-to-dock@micxgx.gmail.com
+-
+-  echo "-> Installing extension $ext_name from $repo (pattern: $pattern)"
+-
+-  download_url=$(download_latest_asset "$repo" "$pattern") || return 1
++install_latest_ego_extension() {
++  ext_uuid="$1"
+@@ -71,0 +95 @@ install_extension_from_github() {
++  echo "-> Installing latest shell-compatible release for $ext_uuid"
+@@ -75,2 +99,2 @@ install_extension_from_github() {
+-  echo "-> Downloading asset..."
+-  curl -L -s "$download_url" -o "$asset_zip"
++  download_latest_ego_zip "$ext_uuid" "$asset_zip"
++  install_extension_from_zip "$asset_zip" "$ext_uuid"
+@@ -78,2 +102,3 @@ install_extension_from_github() {
+-  echo "-> Unpacking to temporary directory..."
+-  unzip -q -o "$asset_zip" -d "$tmpdir/unpack" || true
++  rm -rf "$tmpdir"
++  echo "-> $ext_uuid installed using extensions.gnome.org (shell $DOWNLOADED_SHELL_VERSION)"
++}
+@@ -81,3 +106,5 @@ install_extension_from_github() {
+-  found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f -name metadata.json -printf '%h\n' | head -n1 || true)
+-  if [ -z "$found_dir" ]; then
+-    found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f \( -name extension.js -o -name schemas -o -name schemas.gschema.xml \) -printf '%h\n' | head -n1 || true)
++ensure_extension_enabled() {
++  ext_uuid="$1"
++  enabled_extensions=$(dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || true)
++  if printf '%s' "$enabled_extensions" | grep -F "'$ext_uuid'" >/dev/null 2>&1; then
++    return 0
+@@ -85,2 +112,4 @@ install_extension_from_github() {
+-  if [ -z "$found_dir" ]; then
+-    found_dir="$tmpdir/unpack"
++
++  if command -v gnome-extensions >/dev/null 2>&1; then
++    echo "-> Enabling $ext_uuid"
++    gnome-extensions enable "$ext_uuid" || true
+@@ -87,0 +117 @@ install_extension_from_github() {
++}
+@@ -89 +119,4 @@ install_extension_from_github() {
+-  target_dir="$HOME/.local/share/gnome-shell/extensions/$ext_name"
++assert_dconf_value() {
++  key_path="$1"
++  expected="$2"
++  actual=$(dconf read "$key_path" 2>/dev/null || true)
+@@ -91,3 +124,4 @@ install_extension_from_github() {
+-  echo "-> Creating target extension directory: $target_dir"
+-  rm -rf "$target_dir" || true
+-  mkdir -p "$target_dir"
++  if [ "$actual" = "$expected" ]; then
++    echo "-> OK: $key_path = $expected"
++    return 0
++  fi
+@@ -95,2 +129,3 @@ install_extension_from_github() {
+-  echo "-> Copying extension files into $target_dir"
+-  cp -a "$found_dir/." "$target_dir/" || true
++  echo "Warning: $key_path expected $expected but found $actual"
++  return 1
++}
+@@ -98 +133,12 @@ install_extension_from_github() {
+-  rm -rf "$tmpdir"
++verify_extension_config() {
++  failures=0
++
++  assert_dconf_value "/org/gnome/shell/extensions/dash-to-dock/dock-position" "'BOTTOM'" || failures=1
++  assert_dconf_value "/org/gnome/shell/extensions/dash-to-panel/panel-position" "'TOP'" || failures=1
++  assert_dconf_value "/org/gnome/shell/extensions/dash-to-panel/group-apps" "false" || failures=1
++  assert_dconf_value "/org/gnome/shell/extensions/just-perfection/panel" "true" || failures=1
++
++  if [ "$failures" -ne 0 ]; then
++    echo "Warning: Some extension settings did not match expected values"
++    return 1
++  fi
+@@ -100,2 +146 @@ install_extension_from_github() {
+-  echo "-> Installed $ext_name to $target_dir"
+-  echo "-> Extension will be available after restarting GNOME Shell (Alt+F2, type 'r', press Enter)"
++  echo "-> Extension settings checks passed"
+@@ -104,9 +149,10 @@ install_extension_from_github() {
+-# Install Dash to Dock from local zip if it exists in Downloads
+-if [ -f "$HOME/Downloads/dash-to-dock@micxgx.gmail.com.zip" ]; then
+-  install_extension_from_local_zip "$HOME/Downloads/dash-to-dock@micxgx.gmail.com.zip" "dash-to-dock@micxgx.gmail.com" || \
+-    echo "Warning: Local Dash-to-Dock installation failed."
+-else
+-  # Fallback to GitHub download if local zip not found
+-  install_extension_from_github "micheleg/dash-to-dock" "dash-to-dock.*\\.zip" "dash-to-dock@micxgx.gmail.com" || \
+-    echo "Warning: Dash-to-Dock installation failed or asset not found."
+-fi
++reset_extension_dconf_paths() {
++  dconf reset -f /org/gnome/shell/extensions/dash-to-dock/ || true
++  dconf reset -f /org/gnome/shell/extensions/dash-to-panel/ || true
++  dconf reset -f /org/gnome/shell/extensions/just-perfection/ || true
++}
++
++require_command curl
++require_command unzip
++require_command dconf
++require_command gnome-shell
+@@ -114,2 +160 @@ fi
+-install_extension_from_github "fflewddur/tophat" "tophat.*\\.zip" "tophat@fflewddur.github.io" || \
+-  echo "Warning: TopHat installation failed or asset not found."
++detect_shell_versions
+@@ -117,2 +162,3 @@ install_extension_from_github "fflewddur/tophat" "tophat.*\\.zip" "tophat@fflewd
+-install_extension_from_github "home-sweet-gnome/dash-to-panel" "dash-to-panel.*\\.zip" "dash-to-panel@jderose9.github.com" || \
+-  echo "Warning: Dash-to-Panel installation failed or asset not found."
++install_latest_ego_extension "dash-to-dock@micxgx.gmail.com"
++install_latest_ego_extension "dash-to-panel@jderose9.github.com"
++install_latest_ego_extension "just-perfection-desktop@just-perfection"
+@@ -124 +170 @@ echo "-> Loading GNOME settings from dconf backup..."
+-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+@@ -126,0 +173,2 @@ GNOME_BACKUP="$SCRIPT_DIR/gnome_backup.conf"
++reset_extension_dconf_paths
++
+@@ -141,0 +190,6 @@ fi
++ensure_extension_enabled "dash-to-dock@micxgx.gmail.com"
++ensure_extension_enabled "dash-to-panel@jderose9.github.com"
++ensure_extension_enabled "just-perfection-desktop@just-perfection"
++
++verify_extension_config
++
+diff --git a/NeovimConfig.sh b/NeovimConfig.sh
+index 9096907..eca9b47 100755
+--- a/NeovimConfig.sh
++++ b/NeovimConfig.sh
+@@ -90 +90 @@ EOF
+-cat << 'EOF' > ~/.config/nvim/lua/config/keymaps.lua
++cat <<'EOF' > ~/.config/nvim/lua/config/keymaps.lua
+@@ -110,8 +110,9 @@ vim.keymap.set("n", "<leader>r", function()
+-  local reloaded = 0
+-
+-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+-    if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "" and vim.api.nvim_buf_get_name(buf) ~= "" then
+-      vim.api.nvim_buf_call(buf, function()
+-        vim.cmd("edit!")
+-      end)
+-      reloaded = reloaded + 1
++    local reloaded = 0
++
++    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
++        if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "" and vim.api.nvim_buf_get_name(buf) ~= "" then
++            vim.api.nvim_buf_call(buf, function()
++                vim.cmd("edit!")
++            end)
++            reloaded = reloaded + 1
++        end
+@@ -119 +119,0 @@ vim.keymap.set("n", "<leader>r", function()
+-  end
+@@ -121 +121 @@ vim.keymap.set("n", "<leader>r", function()
+-  vim.notify(("Force-reloaded %d buffers from disk (discarded unsaved edits)"):format(reloaded), vim.log.levels.WARN)
++    vim.notify(("Force-reloaded %d buffers from disk (discarded unsaved edits)"):format(reloaded), vim.log.levels.WARN)
+@@ -124 +124 @@ end, { desc = "Force reload all buffers from disk (discard edits)" })
+--- Reorder buffers (like Ctrl+Shift+PgUp/PgDn in VSCode)
++-- Reorder buffers
+@@ -162,0 +163,16 @@ EOF
++cat <<'EOF' > ~/.config/nvim/lua/plugins/no-autoformat-sh.lua
++return {
++    {
++        "stevearc/conform.nvim",
++        opts = function(_, opts)
++            opts.formatters = opts.formatters or {}
++            opts.formatters_by_ft = opts.formatters_by_ft or {}
++            opts.formatters["shfmt"] = nil
++            opts.formatters_by_ft.sh = {}
++            opts.format_on_save = opts.format_on_save or {}
++            opts.format_on_save.sh = false
++        end,
++    },
++}
++EOF
++
+diff --git a/RunAll.sh b/RunAll.sh
+index e64ada0..821fc4b 100644
+--- a/RunAll.sh
++++ b/RunAll.sh
+@@ -8 +8,2 @@ declare -A SCRIPT_DESCRIPTIONS=(
+-  ["InstallPackages.sh"]="Install pedrorochaosx favorite packages"
++  ["InstallPackages.sh"]="Install packages (pacman)"
++  ["InstallPackagesFedora.sh"]="Install packages (Fedora dnf)"
+@@ -11 +12 @@ declare -A SCRIPT_DESCRIPTIONS=(
+-  ["AlacrittyConfig.sh"]="Configure Alacritty terminal"
++  ["GhosttyConfig.sh"]="Install and configure Ghostty terminal"
+@@ -19,0 +21 @@ SCRIPTS=(
++  InstallPackagesFedora.sh
+@@ -22 +24 @@ SCRIPTS=(
+-  AlacrittyConfig.sh
++  GhosttyConfig.sh
+@@ -34,0 +37 @@ declare -a SELECTED_SCRIPTS=()
++PACKAGES_FLAVOR="${PACKAGES_FLAVOR:-pacman}" # pacman | fedora | both
+@@ -80,0 +84,8 @@ if [[ $NONINTERACTIVE -eq 1 ]]; then
++    if [[ "$s" == "InstallPackages.sh" && "$PACKAGES_FLAVOR" != "pacman" && "$PACKAGES_FLAVOR" != "both" ]]; then
++      echo "Skipping $s because PACKAGES_FLAVOR=$PACKAGES_FLAVOR"
++      continue
++    fi
++    if [[ "$s" == "InstallPackagesFedora.sh" && "$PACKAGES_FLAVOR" != "fedora" && "$PACKAGES_FLAVOR" != "both" ]]; then
++      echo "Skipping $s because PACKAGES_FLAVOR=$PACKAGES_FLAVOR"
++      continue
++    fi
+diff --git a/RunAllLocal.sh b/RunAllLocal.sh
+index 593463e..10a7d06 100644
+--- a/RunAllLocal.sh
++++ b/RunAllLocal.sh
+@@ -8 +8,2 @@ declare -A SCRIPT_DESCRIPTIONS=(
+-  ["InstallPackages.sh"]="Install pedrorochaosx favorite packages"
++  ["InstallPackages.sh"]="Install packages (pacman)"
++  ["InstallPackagesFedora.sh"]="Install packages (Fedora dnf)"
+@@ -11 +12 @@ declare -A SCRIPT_DESCRIPTIONS=(
+-  ["AlacrittyConfig.sh"]="Configure Alacritty terminal"
++  ["GhosttyConfig.sh"]="Install and configure Ghostty terminal"
+@@ -19,0 +21 @@ SCRIPTS=(
++  InstallPackagesFedora.sh
+@@ -22 +24 @@ SCRIPTS=(
+-  AlacrittyConfig.sh
++  GhosttyConfig.sh
+@@ -34,0 +37 @@ declare -a SELECTED_SCRIPTS=()
++PACKAGES_FLAVOR="${PACKAGES_FLAVOR:-pacman}" # pacman | fedora | both
+@@ -87,0 +91,8 @@ if [[ $NONINTERACTIVE -eq 1 ]]; then
++    if [[ "$s" == "InstallPackages.sh" && "$PACKAGES_FLAVOR" != "pacman" && "$PACKAGES_FLAVOR" != "both" ]]; then
++      echo "Skipping $s because PACKAGES_FLAVOR=$PACKAGES_FLAVOR"
++      continue
++    fi
++    if [[ "$s" == "InstallPackagesFedora.sh" && "$PACKAGES_FLAVOR" != "fedora" && "$PACKAGES_FLAVOR" != "both" ]]; then
++      echo "Skipping $s because PACKAGES_FLAVOR=$PACKAGES_FLAVOR"
++      continue
++    fi
+diff --git a/ZellijConfig.sh b/ZellijConfig.sh
+index 097059a..2b7b71e 100755
+--- a/ZellijConfig.sh
++++ b/ZellijConfig.sh
+@@ -3 +3 @@
+-cat <<'catEND' >~/.config/zellij/config.kdl
++cat <<'EOF' >~/.config/zellij/config.kdl
+@@ -455 +455 @@ show_startup_tips false
+-catEND
++EOF
+diff --git a/ZshConfig.sh b/ZshConfig.sh
+index 0146745..37fc51c 100755
+--- a/ZshConfig.sh
++++ b/ZshConfig.sh
+@@ -23 +23 @@ mkdir -p ~/.oh-my-zsh/custom/themes
+-cat << 'catEND' > ~/.oh-my-zsh/custom/themes/pedrorochaosx.zsh-theme
++cat << 'EOF' > ~/.oh-my-zsh/custom/themes/pedrorochaosx.zsh-theme
+@@ -50 +50 @@ ZSH_THEME_RUBY_PROMPT_SUFFIX="›%{$reset_color%}"
+-catEND
++EOF
+@@ -52 +52 @@ catEND
+-cat << 'catEND' > ~/.zshrc
++cat << 'EOF' > ~/.zshrc
+@@ -175 +175 @@ export NVM_DIR="$HOME/.nvm"
+-catEND
++EOF
+diff --git a/gnome_backup.conf b/gnome_backup.conf
+index 4c88ff7..2a865a2 100644
+--- a/gnome_backup.conf
++++ b/gnome_backup.conf
+@@ -1,163 +0,0 @@
+-[apps/update-manager]
+-first-run=false
+-launch-count=13
+-launch-time=int64 1743443926
+-
+-[com/github/Ory0n/Resource_Monitor]
+-cpucolors=@as []
+-cpufrequencystatus=true
+-cpufrequencyunitmeasure='g'
+-cpuloadaveragestatus=false
+-cpuwidth=0
+-customleftclickstatus='htop'
+-decimalsstatus=true
+-diskspacemonitor='used'
+-diskspacestatus=false
+-diskspaceunit='numeric'
+-diskspaceunitmeasure='m'
+-diskstatsmode='single'
+-diskstatsstatus=false
+-diskstatsunitmeasure='m'
+-extensionposition='right'
+-gpumemoryunit='numeric'
+-gpumemoryunitmeasure='m'
+-gpustatus=false
+-iconsposition='left'
+-itemsposition=['cpu', 'gpu', 'ram', 'swap', 'stats', 'space', 'wlan', 'eth']
+-leftclickstatus='htop'
+-netautohidestatus=false
+-netunit='bytes'
+-netunitmeasure='m'
+-netwlanstatus=true
+-ramalert=false
+-rammonitor='used'
+-ramunit='numeric'
+-ramunitmeasure='g'
+-ramwidth=0
+-refreshtime=2
+-swapstatus=true
+-swapunit='numeric'
+-swapunitmeasure='g'
+-thermalcpucolors=@as []
+-thermalcputemperaturestatus=false
+-thermalgputemperaturestatus=false
+-
+-[com/mattjakeman/ExtensionManager]
+-is-maximized=true
+-
+-[com/ubuntu/update-notifier]
+-regular-auto-launch-interval=14
+-release-check-time=uint32 1742310888
+-
+-[org/gnome/Characters]
+-recent-characters=['🎮']
+-
+-[org/gnome/Console]
+-last-window-maximised=false
+-last-window-size=(812, 648)
+-
+-[org/gnome/Extensions]
+-window-maximized=true
+-
+-[org/gnome/Snapshot]
+-capture-mode='picture'
+-is-maximized=false
+-window-height=640
+-window-width=800
+-
+-[org/gnome/baobab/ui]
+-active-chart='rings'
+-is-maximized=true
+-
+-[org/gnome/calculator]
+-accuracy=9
+-angle-units='degrees'
+-base=10
+-button-mode='conversion'
+-number-format='automatic'
+-show-thousands=false
+-show-zeroes=false
+-source-currency='CAD'
+-source-units=['degree']
+-target-currency='BRL'
+-target-units=['radian']
+-unit-category='angle'
+-window-maximized=false
+-window-size=(360, 616)
+-word-size=64
+-
+-[org/gnome/calendar]
+-active-view='month'
+-window-maximized=true
+-window-size=(768, 600)
+-
+-[org/gnome/cheese]
+-burst-delay=1000
+-camera='Integrated Camera (V4L2)'
+-photo-x-resolution=1280
+-photo-y-resolution=720
+-video-x-resolution=1280
+-video-y-resolution=720
+-
+-[org/gnome/clocks/state/window]
+-maximized=false
+-panel-id='world'
+-size=(870, 690)
+-
+-[org/gnome/control-center]
+-last-panel='power'
+-window-state=(1920, 1032, true)
+-
+-[org/gnome/desktop/a11y/applications]
+-screen-keyboard-enabled=false
+-screen-magnifier-enabled=false
+-
+-[org/gnome/desktop/a11y/interface]
+-show-status-shapes=false
+-
+-[org/gnome/desktop/a11y/magnifier]
+-mag-factor=5.0
+-
+-[org/gnome/desktop/app-folders]
+-folder-children=['Utilities', 'YaST', 'Pardus', '20cb3b35-1f2e-4112-9825-f200ef1751e9']
+-
+-[org/gnome/desktop/app-folders/folders/20cb3b35-1f2e-4112-9825-f200ef1751e9]
+-apps=['libreoffice-math.desktop', 'libreoffice-writer.desktop', 'libreoffice-calc.desktop', 'libreoffice-impress.desktop', 'libreoffice-base.desktop', 'libreoffice-draw.desktop', 'libreoffice-startcenter.desktop']
+-name='Office'
+-
+-[org/gnome/desktop/app-folders/folders/Pardus]
+-categories=['X-Pardus-Apps']
+-name='X-Pardus-Apps.directory'
+-translate=true
+-
+-[org/gnome/desktop/app-folders/folders/Utilities]
+-apps=['gnome-abrt.desktop', 'gnome-system-log.desktop', 'org.gnome.Connections.desktop', 'org.gnome.DejaDup.desktop', 'org.gnome.Dictionary.desktop', 'org.gnome.DiskUtility.desktop', 'org.gnome.fonts.desktop', 'org.gnome.tweaks.desktop', 'org.gnome.Usage.desktop', 'vinagre.desktop']
+-categories=['X-GNOME-Utilities']
+-excluded-apps=['nm-connection-editor.desktop', 'org.gnome.baobab.desktop', 'org.gnome.Evince.desktop', 'org.gnome.FileRoller.desktop', 'org.gnome.seahorse.Application.desktop', 'org.gnome.Logs.desktop', 'org.gnome.font-viewer.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Loupe.desktop', 'org.gnome.Connections.desktop', 'org.gnome.Connections.desktop']
+-name='X-GNOME-Utilities.directory'
+-translate=true
+-
+-[org/gnome/desktop/app-folders/folders/YaST]
+-categories=['X-SuSE-YaST']
+-name='suse-yast.directory'
+-translate=true
+-
+-[org/gnome/desktop/background]
+-picture-options='zoom'
+-
+-[org/gnome/desktop/break-reminders/eyesight]
+-play-sound=true
+-
+-[org/gnome/desktop/break-reminders/movement]
+-duration-seconds=uint32 300
+-interval-seconds=uint32 1800
+-play-sound=true
+-
+-[org/gnome/desktop/calendar]
+-show-weekdate=false
+-
+-[org/gnome/desktop/input-sources]
+-mru-sources=[('xkb', 'us+intl'), ('xkb', 'br')]
+-sources=[('xkb', 'us+intl')]
+-xkb-options=@as []
+-
+@@ -172 +9 @@ document-font-name='Noto Sans Medium 11 @wght=500'
+-enable-animations=false
++enable-animations=true
+@@ -183,104 +19,0 @@ toolkit-accessibility=false
+-[org/gnome/desktop/notifications]
+-application-children=['org-gnome-nautilus', 'steam', 'org-gnome-fileroller', 'org-gnome-software', 'gnome-power-panel', 'google-chrome', 'org-gnome-evince', 'firefox-firefox', 'com-usebottles-bottles', 'org-gimp-gimp', 'com-obsproject-studio', 'org-gnome-tecla', 'gparted', 'org-gnome-baobab', 'dev-zed-zed', 'org-gnome-characters', 'org-gnome-terminal-preferences', 'net-lutris-lutris', 'discord-ptb', 'wine-programs-sgr-connectoway-sgr-connectoway', 'snapd-desktop-integration-snapd-desktop-integration', 'org-gnome-extensions', 'chrome-hnpfjngllnobngcgfapefoaidbinmjnm-default', 'com-visualstudio-code', 'gnome-about-panel', 'discord', 'transmission-qt', 'org-gnome-decibels', 'firefox', 'io-dbeaver-dbeavercommunity', 'audacious', 'gnome-printers-panel', 'org-gnome-settings']
+-show-banners=true
+-show-in-lock-screen=false
+-
+-[org/gnome/desktop/notifications/application/audacious]
+-application-id='audacious.desktop'
+-
+-[org/gnome/desktop/notifications/application/chrome-hnpfjngllnobngcgfapefoaidbinmjnm-default]
+-application-id='chrome-hnpfjngllnobngcgfapefoaidbinmjnm-Default.desktop'
+-
+-[org/gnome/desktop/notifications/application/com-obsproject-studio]
+-application-id='com.obsproject.Studio.desktop'
+-
+-[org/gnome/desktop/notifications/application/com-usebottles-bottles]
+-application-id='com.usebottles.bottles.desktop'
+-
+-[org/gnome/desktop/notifications/application/com-visualstudio-code]
+-application-id='com.visualstudio.code.desktop'
+-
+-[org/gnome/desktop/notifications/application/dev-zed-zed]
+-application-id='dev.zed.Zed.desktop'
+-
+-[org/gnome/desktop/notifications/application/discord-ptb]
+-application-id='discord-ptb.desktop'
+-
+-[org/gnome/desktop/notifications/application/discord]
+-application-id='discord.desktop'
+-
+-[org/gnome/desktop/notifications/application/firefox-firefox]
+-application-id='firefox_firefox.desktop'
+-
+-[org/gnome/desktop/notifications/application/firefox]
+-application-id='firefox.desktop'
+-
+-[org/gnome/desktop/notifications/application/gnome-about-panel]
+-application-id='gnome-about-panel.desktop'
+-
+-[org/gnome/desktop/notifications/application/gnome-power-panel]
+-application-id='gnome-power-panel.desktop'
+-
+-[org/gnome/desktop/notifications/application/gnome-printers-panel]
+-application-id='gnome-printers-panel.desktop'
+-
+-[org/gnome/desktop/notifications/application/google-chrome]
+-application-id='google-chrome.desktop'
+-
+-[org/gnome/desktop/notifications/application/gparted]
+-application-id='gparted.desktop'
+-
+-[org/gnome/desktop/notifications/application/io-dbeaver-dbeavercommunity]
+-application-id='io.dbeaver.DBeaverCommunity.desktop'
+-
+-[org/gnome/desktop/notifications/application/net-lutris-lutris]
+-application-id='net.lutris.Lutris.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gimp-gimp]
+-application-id='org.gimp.GIMP.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-baobab]
+-application-id='org.gnome.baobab.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-characters]
+-application-id='org.gnome.Characters.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-decibels]
+-application-id='org.gnome.Decibels.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-evince]
+-application-id='org.gnome.Evince.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-extensions]
+-application-id='org.gnome.Extensions.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-fileroller]
+-application-id='org.gnome.FileRoller.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-nautilus]
+-application-id='org.gnome.Nautilus.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-settings]
+-application-id='org.gnome.Settings.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-software]
+-application-id='org.gnome.Software.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-tecla]
+-application-id='org.gnome.Tecla.desktop'
+-
+-[org/gnome/desktop/notifications/application/org-gnome-terminal-preferences]
+-application-id='org.gnome.Terminal.Preferences.desktop'
+-
+-[org/gnome/desktop/notifications/application/snapd-desktop-integration-snapd-desktop-integration]
+-application-id='snapd-desktop-integration_snapd-desktop-integration.desktop'
+-
+-[org/gnome/desktop/notifications/application/steam]
+-application-id='steam.desktop'
+-
+-[org/gnome/desktop/notifications/application/transmission-qt]
+-application-id='transmission-qt.desktop'
+-
+-[org/gnome/desktop/notifications/application/wine-programs-sgr-connectoway-sgr-connectoway]
+-application-id='wine-Programs-SGR Connectoway-SGR Connectoway.desktop'
+-
+@@ -304,4 +36,0 @@ two-finger-scrolling-enabled=true
+-[org/gnome/desktop/privacy]
+-old-files-age=uint32 30
+-recent-files-max-age=-1
+-
+@@ -309,8 +38 @@ recent-files-max-age=-1
+-sort-order=['org.gnome.Contacts.desktop', 'org.gnome.Documents.desktop', 'org.gnome.Nautilus.desktop']
+-
+-[org/gnome/desktop/session]
+-idle-delay=uint32 0
+-
+-[org/gnome/desktop/sound]
+-allow-volume-above-100-percent=true
+-event-sounds=true
++sort-order=['org.gnome.Nautilus.desktop', 'org.gnome.Documents.desktop', 'org.gnome.Contacts.desktop']
+@@ -408,77 +129,0 @@ num-workspaces=3
+-[org/gnome/epiphany]
+-ask-for-default=false
+-
+-[org/gnome/epiphany/state]
+-is-maximized=true
+-window-size=(1920, 1048)
+-
+-[org/gnome/evince/default]
+-continuous=true
+-dual-page=false
+-dual-page-odd-left=false
+-enable-spellchecking=true
+-fullscreen=false
+-inverted-colors=false
+-show-sidebar=true
+-sidebar-page='thumbnails'
+-sidebar-size=132
+-sizing-mode='free'
+-window-ratio=(1.0078613182826044, 0.7126567844925884)
+-zoom=0.69444444444444442
+-
+-[org/gnome/evolution-data-server]
+-migrated=true
+-
+-[org/gnome/file-roller/dialogs/extract]
+-height=800
+-recreate-folders=true
+-skip-newer=false
+-width=1000
+-
+-[org/gnome/file-roller/file-selector]
+-show-hidden=false
+-sidebar-size=300
+-sort-method='name'
+-sort-type='ascending'
+-window-size=(-1, -1)
+-
+-[org/gnome/file-roller/listing]
+-list-mode='as-folder'
+-name-column-width=1370
+-show-path=false
+-sort-method='name'
+-sort-type='ascending'
+-
+-[org/gnome/file-roller/ui]
+-sidebar-width=200
+-window-height=480
+-window-width=600
+-
+-[org/gnome/gnome-system-monitor]
+-current-tab='processes'
+-maximized=true
+-show-dependencies=false
+-show-whose-processes='user'
+-window-height=720
+-window-width=800
+-
+-[org/gnome/gnome-system-monitor/disktreenew]
+-col-6-visible=true
+-col-6-width=0
+-columns-order=[6]
+-sort-col=1
+-sort-order=0
+-
+-[org/gnome/gnome-system-monitor/memmapstree]
+-sort-col=0
+-sort-order=0
+-
+-[org/gnome/gnome-system-monitor/proctree]
+-col-14-visible=false
+-col-14-width=503
+-col-26-visible=false
+-col-26-width=0
+-columns-order=[0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+-sort-col=15
+-sort-order=0
+-
+@@ -513,58 +157,0 @@ show-create-link=true
+-[org/gnome/nautilus/window-state]
+-initial-size=(1717, 937)
+-initial-size-file-chooser=(1857, 985)
+-maximized=true
+-
+-[org/gnome/nm-applet/eap/1af2f7d4-bf22-4b82-a619-c929ab128e0a]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/1fa78c69-742a-4f32-a960-341ffa621f32]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/2c79ebe2-fa84-4c9f-9f3f-1192ebe9431d]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/38bab905-deae-45ac-ad8f-d37eb9372278]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/8762f187-e4f2-4336-a6c9-fec726ec1996]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/ab2ab0a0-19f4-4020-af24-33735507225c]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/d372ce07-bdd1-4cbb-a55b-9db6dd80b036]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/eebb0e2e-b273-4032-9f44-36434c4123f5]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/f2b56a91-c2d1-4838-a263-7408783a0813]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/nm-applet/eap/fad968f4-f705-320b-a8eb-705fa2d721b1]
+-ignore-ca-cert=false
+-ignore-phase2-ca-cert=false
+-
+-[org/gnome/papers]
+-night-mode=false
+-
+-[org/gnome/papers/default]
+-annot-color='yellow'
+-continuous=true
+-dual-page=false
+-dual-page-odd-left=false
+-enable-spellchecking=true
+-show-sidebar=true
+-sizing-mode='automatic'
+-window-height=1048
+-
+@@ -578,3 +164,0 @@ night-light-temperature=uint32 4700
+-[org/gnome/settings-daemon/plugins/housekeeping]
+-donation-reminder-last-shown=int64 1760400006062637
+-
+@@ -588 +172 @@ control-center-static=['XF86Tools']
+-custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']
++custom-keybindings=@as []
+@@ -682,5 +265,0 @@ www-static=['XF86WWW']
+-[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
+-binding='<Super>c'
+-command='gnome-characters'
+-name='Open GNOME Characters'
+-
+@@ -699,4 +278,5 @@ sleep-inactive-battery-type='nothing'
+-app-picker-layout=[{'nm-connection-editor.desktop': <{'position': <0>}>, 'audacious.desktop': <{'position': <1>}>, 'org.gnome.Logs.desktop': <{'position': <2>}>, 'org.gnome.Decibels.desktop': <{'position': <3>}>, 'bssh.desktop': <{'position': <4>}>, 'bvnc.desktop': <{'position': <5>}>, 'avahi-discover.desktop': <{'position': <6>}>, 'btop.desktop': <{'position': <7>}>, 'org.gnome.Calendar.desktop': <{'position': <8>}>, 'org.gnome.Snapshot.desktop': <{'position': <9>}>, 'org.gnome.Cheese.desktop': <{'position': <10>}>, 'chromium.desktop': <{'position': <11>}>, 'com.raspberrypi.rpi-imager.desktop': <{'position': <12>}>, 'org.gnome.Console.desktop': <{'position': <13>}>, 'org.gnome.Contacts.desktop': <{'position': <14>}>, 'org.gnome.SimpleScan.desktop': <{'position': <15>}>, 'org.gnome.Papers.desktop': <{'position': <16>}>, 'dev.zed.Zed.desktop': <{'position': <17>}>, 'htop.desktop': <{'position': <18>}>, 'electron37.desktop': <{'position': <19>}>, 'org.gnome.FileRoller.desktop': <{'position': <20>}>, 'com.google.Chrome.desktop': <{'position': <21>}>, 'org.gnome.Yelp.desktop': <{'position': <22>}>, 'winetricks.desktop': <{'position': <23>}>}, {'org.gnome.Evince.desktop': <{'position': <0>}>, 'org.gnome.clocks.desktop': <{'position': <1>}>, 'org.gnome.Maps.desktop': <{'position': <2>}>, 'wine-Programs-SGR Connectoway-SGR Connectoway.desktop': <{'position': <3>}>, 'org.gnome.Music.desktop': <{'position': <4>}>, 'nvidia-settings.desktop': <{'position': <5>}>, 'org.freedesktop.MalcontentControl.desktop': <{'position': <6>}>, 'protontricks.desktop': <{'position': <7>}>, 'qv4l2.desktop': <{'position': <8>}>, 'qvidcap.desktop': <{'position': <9>}>, 'org.gnome.Software.desktop': <{'position': <10>}>, 'org.gnome.Tour.desktop': <{'position': <11>}>, 'transmission-gtk.desktop': <{'position': <12>}>, 'transmission-qt.desktop': <{'position': <13>}>, 'org.gnome.Showtime.desktop': <{'position': <14>}>, 'org.gnome.Weather.desktop': <{'position': <15>}>, 'org.gnome.Epiphany.desktop': <{'position': <16>}>, 'zellij.desktop': <{'position': <17>}>, 'org.gnome.Loupe.desktop': <{'position': <18>}>, '20cb3b35-1f2e-4112-9825-f200ef1751e9': <{'position': <19>}>, 'org.gnome.Connections.desktop': <{'position': <20>}>, 'nvim.desktop': <{'position': <21>}>, 'vim.desktop': <{'position': <22>}>, 'org.pulseaudio.pavucontrol.desktop': <{'position': <23>}>}, {'org.gnome.TextEditor.desktop': <{'position': <0>}>, 'org.gnome.font-viewer.desktop': <{'position': <1>}>, 'vlc.desktop': <{'position': <2>}>, 'cups.desktop': <{'position': <3>}>, 'org.remmina.Remmina.desktop': <{'position': <4>}>}]
+-disabled-extensions=['Resource_Monitor@Ory0n', 'ubuntu-appindicators@ubuntu.com', 'ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com']
+-enabled-extensions=['dash-to-dock@micxgx.gmail.com', 'ding@rastersoft.com', 'tophat@fflewddur.github.io', 'dash-to-panel@jderose9.github.com']
+-favorite-apps=['org.gnome.Nautilus.desktop', 'Alacritty.desktop', 'firefox.desktop', 'com.getpostman.Postman.desktop', 'io.dbeaver.DBeaverCommunity.desktop', 'com.visualstudio.code.desktop', 'org.gimp.GIMP.desktop', 'com.obsproject.Studio.desktop', 'org.remmina.Remmina.desktop', 'discord.desktop', 'steam.desktop', 'net.lutris.Lutris.desktop', 'org.gnome.Characters.desktop', 'org.gnome.Extensions.desktop', 'org.gnome.baobab.desktop', 'org.gnome.DiskUtility.desktop', 'org.gnome.tweaks.desktop', 'org.gnome.Settings.desktop']
++app-picker-layout=[{'nm-connection-editor.desktop': <{'position': <0>}>, 'audacious.desktop': <{'position': <1>}>, 'org.gnome.Logs.desktop': <{'position': <2>}>, 'org.gnome.Decibels.desktop': <{'position': <3>}>, 'bssh.desktop': <{'position': <4>}>, 'bvnc.desktop': <{'position': <5>}>, 'avahi-discover.desktop': <{'position': <6>}>, 'btop.desktop': <{'position': <7>}>, 'org.gnome.Calendar.desktop': <{'position': <8>}>, 'org.gnome.Snapshot.desktop': <{'position': <9>}>, 'org.gnome.Cheese.desktop': <{'position': <10>}>, 'com.raspberrypi.rpi-imager.desktop': <{'position': <11>}>, 'org.gnome.Console.desktop': <{'position': <12>}>, 'org.gnome.Contacts.desktop': <{'position': <13>}>, 'org.gnome.SimpleScan.desktop': <{'position': <14>}>, 'org.gnome.Papers.desktop': <{'position': <15>}>, 'electron37.desktop': <{'position': <16>}>, 'org.gnome.FileRoller.desktop': <{'position': <17>}>, 'org.gnome.Yelp.desktop': <{'position': <18>}>, 'winetricks.desktop': <{'position': <19>}>}, {'org.gnome.Evince.desktop': <{'position': <0>}>, 'org.gnome.clocks.desktop': <{'position': <1>}>, 'org.gnome.Maps.desktop': <{'position': <2>}>, 'wine-Programs-SGR Connectoway-SGR Connectoway.desktop': <{'position': <3>}>, 'org.gnome.Music.desktop': <{'position': <4>}>, 'nvidia-settings.desktop': <{'position': <5>}>, 'org.freedesktop.MalcontentControl.desktop': <{'position': <6>}>, 'protontricks.desktop': <{'position': <7>}>, 'qv4l2.desktop': <{'position': <8>}>, 'qvidcap.desktop': <{'position': <9>}>, 'org.gnome.Software.desktop': <{'position': <10>}>, 'org.gnome.Tour.desktop': <{'position': <11>}>, 'transmission-gtk.desktop': <{'position': <12>}>, 'org.gnome.Showtime.desktop': <{'position': <13>}>, 'org.gnome.Weather.desktop': <{'position': <14>}>, 'org.gnome.Epiphany.desktop': <{'position': <15>}>, 'zellij.desktop': <{'position': <16>}>, 'org.gnome.Loupe.desktop': <{'position': <17>}>, '20cb3b35-1f2e-4112-9825-f200ef1751e9': <{'position': <18>}>, 'org.gnome.Connections.desktop': <{'position': <19>}>, 'com.anydesk.Anydesk.desktop': <{'position': <20>}>, 'nvim.desktop': <{'position': <21>}>, 'vim.desktop': <{'position': <22>}>, 'org.pulseaudio.pavucontrol.desktop': <{'position': <23>}>}, {'org.gnome.TextEditor.desktop': <{'position': <0>}>, 'org.gnome.font-viewer.desktop': <{'position': <1>}>, 'vlc.desktop': <{'position': <2>}>, 'cups.desktop': <{'position': <3>}>, 'org.gnome.Calculator.desktop': <{'position': <4>}>, 'wine-Programs-EPSON-Epson Connect Printer Setup-Epson Connect Printer Setup.desktop': <{'position': <5>}>, 'org.gnome.Extensions.desktop': <{'position': <6>}>, 'org.ksnip.ksnip.desktop': <{'position': <7>}>, 'legion_gui.desktop': <{'position': <8>}>, 'lightshot.desktop': <{'position': <9>}>, 'wine-Programs-Lightshot-Lightshot.desktop': <{'position': <10>}>, 'com.rustdesk.RustDesk.desktop': <{'position': <11>}>, 'wine-Programs-Lightshot-Uninstall Lightshot.desktop': <{'position': <12>}>, 'org.gnome.baobab.desktop': <{'position': <13>}>, 'org.gnome.Characters.desktop': <{'position': <14>}>, 'org.gnome.SystemMonitor.desktop': <{'position': <15>}>, 'Alacritty.desktop': <{'position': <16>}>}]
++disable-user-extensions=false
++disabled-extensions=['tiling-assistant@ubuntu.com', 'tophat@fflewddur.github.io']
++enabled-extensions=['ding@rastersoft.com', 'just-perfection-desktop@just-perfection', 'dash-to-panel@jderose9.github.com', 'dash-to-dock@micxgx.gmail.com']
++favorite-apps=['org.gnome.Nautilus.desktop', 'firefox.desktop', 'com.getpostman.Postman.desktop', 'io.dbeaver.DBeaverCommunity.desktop', 'com.mitchellh.ghostty.desktop', 'com.visualstudio.code.desktop', 'antigravity.desktop', 'org.gimp.GIMP.desktop', 'com.obsproject.Studio.desktop', 'org.remmina.Remmina.desktop', 'discord.desktop', 'steam.desktop', 'net.lutris.Lutris.desktop', 'org.gnome.DiskUtility.desktop', 'org.gnome.tweaks.desktop', 'com.mattjakeman.ExtensionManager.desktop', 'org.gnome.Settings.desktop']
+@@ -705 +284,0 @@ remember-mount-password=false
+-welcome-dialog-last-shown-version='46.0'
+@@ -714 +293 @@ animate-show-apps=true
+-animation-time=0.18010000000000001
++animation-time=0.10000000000000001
+@@ -788 +367 @@ preferred-monitor=-2
+-preferred-monitor-by-connector='primary'
++preferred-monitor-by-connector='eDP-1'
+@@ -895 +474 @@ click-action='CYCLE-MIN'
+-context-menu-entries='[{"title":"Files","cmd":"nautilus"},{"title":"Terminal","cmd":"TERMINALSETTINGS"},{"title":"System monitor","cmd":"gnome-system-monitor"},{"title":"Extensions","cmd":"gnome-extensions-app"}]'
++context-menu-entries='[]'
+@@ -899,4 +478,4 @@ desktop-line-use-custom-color=false
+-dot-color-1='#5294e2'
+-dot-color-2='#5294e2'
+-dot-color-3='#5294e2'
+-dot-color-4='#5294e2'
++dot-color-1='#38383b'
++dot-color-2='#38383b'
++dot-color-3='#38383b'
++dot-color-4='#38383b'
+@@ -904 +483 @@ dot-color-dominant=false
+-dot-color-override=false
++dot-color-override=true
+@@ -910 +489 @@ dot-color-unfocused-different=false
+-dot-position='BOTTOM'
++dot-position='TOP'
+@@ -913 +492 @@ dot-style-focused='DASHES'
+-dot-style-unfocused='DASHES'
++dot-style-unfocused='SEGMENTED'
+@@ -915 +494 @@ enter-peek-mode-timeout=500
+-extension-version=72
++extension-version=73
+@@ -917 +496 @@ focus-highlight=false
+-focus-highlight-color='#EEEEEE'
++focus-highlight-color='#38383b'
+@@ -919 +498 @@ focus-highlight-dominant=false
+-focus-highlight-opacity=25
++focus-highlight-opacity=100
+@@ -921 +500 @@ global-border-radius=0
+-group-apps=true
++group-apps=false
+@@ -926 +505 @@ group-apps-label-font-weight='inherit'
+-group-apps-label-max-width=160
++group-apps-label-max-width=0
+@@ -957 +536 @@ leftbox-size=0
+-middle-click-action='LAUNCH'
++middle-click-action='QUIT'
+@@ -961,0 +541,2 @@ overview-click-to-exit=false
++panel-anchors='{"BOE-0x00000000":"MIDDLE","GSM-0x01010101":"MIDDLE","AUO-0x00007ead":"MIDDLE"}'
++panel-element-positions='{"BOE-0x00000000":[{"element":"showAppsButton","visible":true,"position":"stackedTL"},{"element":"taskbar","visible":true,"position":"stackedTL"},{"element":"leftBox","visible":true,"position":"stackedTL"},{"element":"centerBox","visible":true,"position":"centerMonitor"},{"element":"activitiesButton","visible":true,"position":"stackedBR"},{"element":"rightBox","visible":true,"position":"stackedBR"},{"element":"systemMenu","visible":true,"position":"stackedBR"},{"element":"dateMenu","visible":true,"position":"stackedBR"},{"element":"desktopButton","visible":false,"position":"stackedBR"}],"AUO-0x00007ead":[{"element":"showAppsButton","visible":true,"position":"stackedTL"},{"element":"taskbar","visible":true,"position":"stackedTL"},{"element":"leftBox","visible":true,"position":"stackedTL"},{"element":"centerBox","visible":true,"position":"centerMonitor"},{"element":"activitiesButton","visible":true,"position":"stackedBR"},{"element":"rightBox","visible":true,"position":"stackedBR"},{"element":"systemMenu","visible":true,"position":"stackedBR"},{"element":"dateMenu","visible":true,"position":"stackedBR"},{"element":"desktopButton","visible":false,"position":"stackedBR"}]}'
+@@ -962,0 +544 @@ panel-element-positions-monitors-sync=true
++panel-lengths='{"BOE-0x00000000":100}'
+@@ -963,0 +546 @@ panel-position='TOP'
++panel-positions='{"BOE-0x00000000":"TOP","GSM-0x01010101":"TOP","AUO-0x00007ead":"TOP"}'
+@@ -966,0 +550 @@ panel-size=48
++panel-sizes='{"BOE-0x00000000":32,"AUO-0x00007ead":32}'
+@@ -974,0 +559 @@ preview-use-custom-opacity=true
++primary-monitor='BOE-0x00000000'
+@@ -1050,0 +636,31 @@ show-home=false
++[org/gnome/shell/extensions/just-perfection]
++accent-color-icon=false
++activities-button=true
++alt-tab-small-icon-size=0
++alt-tab-window-preview-size=0
++animation=2
++dash=true
++dash-app-running=true
++dash-separator=true
++double-super-to-appgrid=true
++looking-glass-width=0
++osd-position=0
++overlay-key=true
++panel=true
++panel-notification-icon=true
++power-icon=true
++quick-settings=true
++screen-sharing-indicator=true
++show-apps-button=true
++startup-status=0
++support-notifier-showed-version=36
++switcher-popup-delay=false
++window-demands-attention-focus=true
++window-picker-icon=true
++workspace=true
++workspace-peek=false
++workspace-switcher-should-show=true
++workspace-switcher-size=0
++workspace-thumbnail-to-main-view=false
++workspace-wrap-around=false
++
+@@ -1142 +758 @@ window-gap=0
+-cpu-display='both'
++cpu-display='numeric'
+@@ -1144 +760 @@ cpu-normalize-proc-use=true
+-cpu-show-cores=true
++cpu-show-cores=false
+@@ -1146 +762 @@ cpu-sort-cores=false
+-fs-display='both'
++fs-display='numeric'
+@@ -1150 +766 @@ mem-abs-units=true
+-mem-display='both'
++mem-display='numeric'
+@@ -1158 +774 @@ show-cpu=true
+-show-disk=true
++show-disk=false
+@@ -1162,2 +778,2 @@ show-mem=true
+-show-menu-actions=true
+-show-net=true
++show-menu-actions=false
++show-net=false
+@@ -1192 +808 @@ switch-to-application-9=@as []
+-toggle-application-view=@as []
++toggle-application-view=['<Alt><Super>space']
+@@ -1194 +809,0 @@ toggle-message-tray=['<Super>v']
+-toggle-overview=@as []
+@@ -1201 +816 @@ locations=@av []
+-check-timestamp=int64 1768872880
++check-timestamp=int64 1775467115
+@@ -1203 +818 @@ first-run=false
+-flatpak-purge-timestamp=int64 1768880016
++flatpak-purge-timestamp=int64 1775241055
+@@ -1229,0 +845 @@ use-transparent-background=false
++visible-name='pedrorochaosx'
+@@ -1235,2 +851,2 @@ show-extensions-notice=false
+-custom-colors=[(0.11372549086809158, 0.67450982332229614, 0.83921569585800171, 1.0)]
+-selected-color=(true, 0.87843137979507446, 0.10588235408067703, 0.14117647707462311, 1.0)
++custom-colors=[(0.32156863808631897, 0.58039218187332153, 0.88627451658248901, 1.0), (0.21960784494876862, 0.21960784494876862, 0.23137255012989044, 1.0), (0.93333333730697632, 0.93333333730697632, 0.93333333730697632, 1.0), (0.11372549086809158, 0.67450982332229614, 0.83921569585800171, 1.0)]
++selected-color=(true, 0.21960784494876862, 0.21960784494876862, 0.23137255012989044, 1.0)
+@@ -1252 +868 @@ custom-colors=[(0.81568627450980391, 0.81176470588235294, 0.80000000000000004, 1
+-selected-color=(true, 0.81568627450980391, 0.81176470588235294, 0.80000000000000004, 1.0)
++selected-color=(true, 0.0, 0.0, 0.0, 1.0)
+@@ -1262 +878 @@ sidebar-width=204
+-sort-column='name'
++sort-column='modified'
+diff --git a/packages.txt b/packages.txt
+index 4445e02..3279e33 100644
+--- a/packages.txt
++++ b/packages.txt
+@@ -1,0 +2 @@ alacritty
++ghostty
+@@ -7,2 +7,0 @@ btop
+-chromium
+-composer
+@@ -10,2 +8,0 @@ cpupower
+-decibels
+-discord
+@@ -26,2 +22,0 @@ gnome-connections
+-gnome-console
+-gnome-contacts
+@@ -30 +24,0 @@ gnome-logs
+-gnome-maps
+@@ -36 +29,0 @@ gnome-text-editor
+-gnome-tour
+@@ -39 +31,0 @@ gnome-user-docs
+-gnome-weather
+@@ -41,2 +32,0 @@ grub
+-htop
+-intel-ucode
+@@ -51,2 +40,0 @@ loupe
+-lutris
+-nano
+@@ -57,2 +44,0 @@ nmap
+-nvidia-open
+-nvidia-prime
+@@ -64 +49,0 @@ remmina
+-rpi-imager
+@@ -68 +52,0 @@ snapshot
+-steam
+@@ -71 +54,0 @@ transmission-gtk
+-transmission-qt
+@@ -76,4 +58,0 @@ wireless_tools
+-xf86-video-amdgpu
+-xf86-video-ati
+-xf86-video-nouveau
+-xorg-xinit
+diff --git a/vscode_keybindings.json b/vscode_keybindings.json
+index 094bbd0..8ef6d96 100644
+--- a/vscode_keybindings.json
++++ b/vscode_keybindings.json
+@@ -63,8 +62,0 @@
+-	{
+-		"key": "shift+l",
+-		"command": "workbench.action.nextEditor"
+-	},
+-	{
+-		"key": "shift+h",
+-		"command": "workbench.action.previousEditor"
+-	},
+@@ -454 +445,0 @@
+-	
+@@ -560 +550,0 @@
+-	
+@@ -637 +626,0 @@
+-	
+@@ -652 +640,0 @@
+-	
+@@ -1204 +1191,0 @@
+-	
+@@ -2901 +2888 @@
+-]
++]
+\ No newline at end of file
+diff --git a/vscode_settings.json b/vscode_settings.json
+index 2e8cedb..f644833 100644
+--- a/vscode_settings.json
++++ b/vscode_settings.json
+@@ -5 +5 @@
+-    "editor.fontSize": 16,
++	"editor.fontSize": 16,
+@@ -7,11 +7,11 @@
+-    "editor.insertSpaces": false,
+-    "editor.suggestSelection": "first",
+-    "editor.minimap.enabled": false,
+-    "editor.autoClosingBrackets": "never",
+-    "editor.autoClosingQuotes": "never",
+-    "editor.autoClosingOvertype": "never",
+-    "editor.autoSurround": "never",
+-    "editor.accessibilitySupport": "off",
+-    "editor.mouseWheelZoom": true,
+-    "editor.acceptSuggestionOnEnter": "off",
+-    "editor.detectIndentation": false,
++	"editor.insertSpaces": false,
++	"editor.suggestSelection": "first",
++	"editor.minimap.enabled": false,
++	"editor.autoClosingBrackets": "never",
++	"editor.autoClosingQuotes": "never",
++	"editor.autoClosingOvertype": "never",
++	"editor.autoSurround": "never",
++	"editor.accessibilitySupport": "off",
++	"editor.mouseWheelZoom": true,
++	"editor.acceptSuggestionOnEnter": "off",
++	"editor.detectIndentation": false,
+@@ -20 +19,0 @@
+-	"editor.cursorStyle": "block",
+@@ -33 +32 @@
+-			"method": "#ffb89c",
++			"method": "#ffb89c"
+@@ -39 +38 @@
+-				"scope":"variable",
++				"scope": "variable",
+@@ -42 +41 @@
+-				},
++				}
+@@ -45 +44 @@
+-				"scope":"variable.name",
++				"scope": "variable.name",
+@@ -48 +47 @@
+-				},
++				}
+@@ -51 +50 @@
+-				"scope":"constant",
++				"scope": "constant",
+@@ -54 +53 @@
+-				},
++				}
+@@ -57 +56 @@
+-				"scope":"string",
++				"scope": "string",
+@@ -60 +59 @@
+-				},
++				}
+@@ -63 +62 @@
+-				"scope":"comment",
++				"scope": "comment",
+@@ -66 +65 @@
+-				},
++				}
+@@ -69 +68 @@
+-				"scope":"keyword.control",
++				"scope": "keyword.control",
+@@ -72 +71 @@
+-				},
++				}
+@@ -75 +74 @@
+-				"scope":"keyword.operator",
++				"scope": "keyword.operator",
+@@ -78 +77 @@
+-				},
++				}
+@@ -81 +80 @@
+-				"scope":"keyword.operator.logical",
++				"scope": "keyword.operator.logical",
+@@ -84 +83 @@
+-				},
++				}
+@@ -87 +86 @@
+-				"scope":"support.type",
++				"scope": "support.type",
+@@ -90 +89 @@
+-				},
++				}
+@@ -93 +92 @@
+-				"scope":"support.type.property-name",
++				"scope": "support.type.property-name",
+@@ -96,3 +95,2 @@
+-				},
+-			},
+-			
++				}
++			}
+@@ -101 +98,0 @@
+-	
+@@ -108 +104,0 @@
+-	
+@@ -112 +108 @@
+-	"workbench.editor.labelFormat" : "long",
++	"workbench.editor.labelFormat": "long",
+@@ -121,3 +117,2 @@
+-		"menu.border":"#111111",
+-		"menu.background":"#111111",
+-
++		"menu.border": "#111111",
++		"menu.background": "#111111",
+@@ -132 +126,0 @@
+-
+@@ -134,2 +128 @@
+-		
+-		"sideBar.border":"#1f1f1f",
++		"sideBar.border": "#1f1f1f",
+@@ -137,2 +130 @@
+-		
+-		"activityBar.background": "#1f1f1f", 
++		"activityBar.background": "#1f1f1f",
+@@ -140 +131,0 @@
+-		
+@@ -142 +133 @@
+-		"statusBar.foreground":"#AAAAAA",
++		"statusBar.foreground": "#AAAAAA",
+@@ -144 +134,0 @@
+-		
+@@ -146 +135,0 @@
+-		
+@@ -148,3 +137,2 @@
+-
+-		"list.activeSelectionBackground":"#555555",
+-		"list.focusAndSelectionOutline":"#555555",
++		"list.activeSelectionBackground": "#555555",
++		"list.focusAndSelectionOutline": "#555555"
+@@ -152,5 +140,3 @@
+-
+-    "debug.console.fontSize": 12,
+-    "debug.console.fontFamily": "",
+-	
+-    "terminal.integrated.fontSize": 12,
++	"debug.console.fontSize": 12,
++	"debug.console.fontFamily": "",
++	"terminal.integrated.fontSize": 12,
+@@ -159,6 +145,3 @@
+-	
+-    "markdown.preview.fontSize": 12,
+-	
+-    "explorer.confirmDelete": false,
+-    "explorer.compactFolders": false,
+-
++	"markdown.preview.fontSize": 12,
++	"explorer.confirmDelete": false,
++	"explorer.compactFolders": false,
+@@ -166,2 +149 @@
+-	
+-    "security.workspace.trust.untrustedFiles": "open",
++	"security.workspace.trust.untrustedFiles": "open",
+@@ -169 +150,0 @@
+-	
+@@ -171 +151,0 @@
+-	
+@@ -174 +153,0 @@
+-	
+@@ -176 +154,0 @@
+-	
+@@ -178 +155,0 @@
+-
+@@ -183 +159,0 @@
+-
+@@ -190 +166 @@
+-}
++}
+\ No newline at end of file

@@ -87,7 +87,7 @@ cat << 'EOF' > ~/.config/nvim/lua/config/autocmds.lua
 vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 EOF
 
-cat << 'EOF' > ~/.config/nvim/lua/config/keymaps.lua
+cat <<'EOF' > ~/.config/nvim/lua/config/keymaps.lua
 -- Normal mode: move current line up or down
 vim.keymap.set("n", "<A-Up>", ":m .-2<CR>==", { silent = true, desc = "Move line up" })
 vim.keymap.set("n", "<A-Down>", ":m .+1<CR>==", { silent = true, desc = "Move line down" })
@@ -107,21 +107,21 @@ vim.keymap.set("n", "<Leader>bw", ":w<CR>", { silent = true, desc = "Write curre
 vim.keymap.set("n", "<Leader>bW", ":wa<CR>", { silent = true, desc = "Write all buffers" })
 
 vim.keymap.set("n", "<leader>r", function()
-  local reloaded = 0
+    local reloaded = 0
 
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "" and vim.api.nvim_buf_get_name(buf) ~= "" then
-      vim.api.nvim_buf_call(buf, function()
-        vim.cmd("edit!")
-      end)
-      reloaded = reloaded + 1
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "" and vim.api.nvim_buf_get_name(buf) ~= "" then
+            vim.api.nvim_buf_call(buf, function()
+                vim.cmd("edit!")
+            end)
+            reloaded = reloaded + 1
+        end
     end
-  end
 
-  vim.notify(("Force-reloaded %d buffers from disk (discarded unsaved edits)"):format(reloaded), vim.log.levels.WARN)
+    vim.notify(("Force-reloaded %d buffers from disk (discarded unsaved edits)"):format(reloaded), vim.log.levels.WARN)
 end, { desc = "Force reload all buffers from disk (discard edits)" })
 
--- Reorder buffers (like Ctrl+Shift+PgUp/PgDn in VSCode)
+-- Reorder buffers
 vim.keymap.set("n", "<S-A-h>", ":BufferLineMovePrev<CR>", { silent = true, desc = "Move buffer left" })
 vim.keymap.set("n", "<S-A-l>", ":BufferLineMoveNext<CR>", { silent = true, desc = "Move buffer right" })
 EOF
@@ -157,6 +157,22 @@ return {
       format_after_save = false,
     },
   },
+}
+EOF
+
+cat <<'EOF' > ~/.config/nvim/lua/plugins/no-autoformat-sh.lua
+return {
+    {
+        "stevearc/conform.nvim",
+        opts = function(_, opts)
+            opts.formatters = opts.formatters or {}
+            opts.formatters_by_ft = opts.formatters_by_ft or {}
+            opts.formatters["shfmt"] = nil
+            opts.formatters_by_ft.sh = {}
+            opts.format_on_save = opts.format_on_save or {}
+            opts.format_on_save.sh = false
+        end,
+    },
 }
 EOF
 

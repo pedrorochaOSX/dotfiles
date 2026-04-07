@@ -5,10 +5,11 @@ set -euo pipefail
 GITHUB_BASE_URL="https://raw.githubusercontent.com/pedrorochaOSX/dotfiles/refs/heads/main"
 
 declare -A SCRIPT_DESCRIPTIONS=(
-  ["InstallPackages.sh"]="Install pedrorochaosx favorite packages"
+  ["InstallPackages.sh"]="Install packages (pacman)"
+  ["InstallPackagesFedora.sh"]="Install packages (Fedora dnf)"
   ["GitHubAuth.sh"]="Login into GitHub"
   ["ZshConfig.sh"]="Configure zsh shell"
-  ["AlacrittyConfig.sh"]="Configure Alacritty terminal"
+  ["GhosttyConfig.sh"]="Install and configure Ghostty terminal"
   ["ZellijConfig.sh"]="Configure Zellij"
   ["NeovimConfig.sh"]="Configure Neovim"
   ["GetFonts.sh"]="Download and install JetBrainsMono Nerd Font"
@@ -17,9 +18,10 @@ declare -A SCRIPT_DESCRIPTIONS=(
 
 SCRIPTS=(
   InstallPackages.sh
+  InstallPackagesFedora.sh
   GitHubAuth.sh
   ZshConfig.sh
-  AlacrittyConfig.sh
+  GhosttyConfig.sh
   ZellijConfig.sh
   NeovimConfig.sh
   GetFonts.sh
@@ -32,6 +34,7 @@ if [[ "${1:-}" == "--yes" || "${1:-}" == "-y" ]]; then
 fi
 
 declare -a SELECTED_SCRIPTS=()
+PACKAGES_FLAVOR="${PACKAGES_FLAVOR:-pacman}" # pacman | fedora | both
 
 ask_script() {
   local script="$1"
@@ -78,6 +81,14 @@ run_script() {
 
 if [[ $NONINTERACTIVE -eq 1 ]]; then
   for s in "${SCRIPTS[@]}"; do
+    if [[ "$s" == "InstallPackages.sh" && "$PACKAGES_FLAVOR" != "pacman" && "$PACKAGES_FLAVOR" != "both" ]]; then
+      echo "Skipping $s because PACKAGES_FLAVOR=$PACKAGES_FLAVOR"
+      continue
+    fi
+    if [[ "$s" == "InstallPackagesFedora.sh" && "$PACKAGES_FLAVOR" != "fedora" && "$PACKAGES_FLAVOR" != "both" ]]; then
+      echo "Skipping $s because PACKAGES_FLAVOR=$PACKAGES_FLAVOR"
+      continue
+    fi
     run_script "$s"
   done
 else

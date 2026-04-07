@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-cat <<'catEND' > ~/.alacritty.toml
+cat <<'EOF' > ~/.alacritty.toml
 [window]
 	padding = { x = 2, y = 2 }
 	decorations = "None"
@@ -26,4 +26,4 @@ cat <<'catEND' > ~/.alacritty.toml
 		{ key = "Up", mods = "Shift", action = "ScrollLineUp" },
 		{ key = "Down", mods = "Shift", action = "ScrollLineDown" },
 	]
-catEND
+EOF

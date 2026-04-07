@@ -2,127 +2,175 @@
 
 set -e
 
-install_extension_from_local_zip() {
+require_command() {
+  cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Error: Required command not found: $cmd"
+    exit 1
+  fi
+}
+
+detect_shell_versions() {
+  full_version=$(gnome-shell --version 2>/dev/null | sed -n 's/^GNOME Shell \([0-9][0-9.]*\).*$/\1/p')
+  if [ -z "$full_version" ]; then
+    echo "Error: Could not detect GNOME Shell version"
+    exit 1
+  fi
+
+  major_version=$(printf '%s' "$full_version" | cut -d'.' -f1)
+  SHELL_VERSION_CANDIDATES="$full_version $major_version"
+  echo "-> GNOME Shell version detected: $full_version (candidates: $SHELL_VERSION_CANDIDATES)"
+}
+
+download_latest_ego_zip() {
+  ext_uuid="$1"
+  out_zip="$2"
+
+  for shell_version in $SHELL_VERSION_CANDIDATES; do
+    url="https://extensions.gnome.org/download-extension/${ext_uuid}.shell-extension.zip?shell_version=${shell_version}"
+    echo "-> Trying latest $ext_uuid for shell version $shell_version"
+
+    if curl -fL -sS "$url" -o "$out_zip"; then
+      DOWNLOADED_SHELL_VERSION="$shell_version"
+      return 0
+    fi
+  done
+
+  echo "Error: Could not download $ext_uuid from extensions.gnome.org"
+  return 1
+}
+
+install_extension_from_zip() {
   zip_file="$1"
-  ext_name="$2"    # extension uuid, e.g. dash-to-dock@micxgx.gmail.com
+  ext_uuid="$2"
 
   if [ ! -f "$zip_file" ]; then
     echo "Error: Zip file not found: $zip_file"
     return 1
   fi
 
-  echo "-> Installing extension $ext_name from local zip: $zip_file"
-
   tmpdir=$(mktemp -d)
-  
-  echo "-> Unpacking to temporary directory..."
-  unzip -q -o "$zip_file" -d "$tmpdir/unpack" || true
 
-  # Find the directory containing metadata.json or extension.js
-  found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f -name metadata.json -printf '%h\n' | head -n1 || true)
-  if [ -z "$found_dir" ]; then
-    found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f \( -name extension.js -o -name schemas -o -name schemas.gschema.xml \) -printf '%h\n' | head -n1 || true)
-  fi
+  echo "-> Unpacking $ext_uuid..."
+  unzip -q -o "$zip_file" -d "$tmpdir/unpack"
+
+  found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f -name metadata.json -printf '%h\n' | head -n1)
   if [ -z "$found_dir" ]; then
     found_dir="$tmpdir/unpack"
   fi
 
-  target_dir="$HOME/.local/share/gnome-shell/extensions/$ext_name"
+  target_dir="$HOME/.local/share/gnome-shell/extensions/$ext_uuid"
 
-  echo "-> Creating target extension directory: $target_dir"
-  rm -rf "$target_dir" || true
+  rm -rf "$target_dir"
   mkdir -p "$target_dir"
+  cp -a "$found_dir/." "$target_dir/"
 
-  echo "-> Copying extension files into $target_dir"
-  cp -a "$found_dir/." "$target_dir/" || true
-
-  rm -rf "$tmpdir"
-
-  echo "-> Installed $ext_name to $target_dir"
-  echo "-> Extension will be available after restarting GNOME Shell (Alt+F2, type 'r', press Enter)"
-}
-
-download_latest_asset() {
-  repo="$1"
-  pattern="$2"
-
-  echo "-> Querying latest release for $repo..." >&2
-  download_url=$(curl -s "https://api.github.com/repos/$repo/releases/latest" \
-    | sed -n 's/.*"browser_download_url": *"\([^"\\]*\)".*/\1/p' \
-    | grep -E "$pattern" \
-    | head -n1)
-
-  if [ -z "$download_url" ]; then
-    echo "Could not find a matching asset for $repo (pattern: $pattern)" >&2
+  metadata_file="$target_dir/metadata.json"
+  if [ ! -f "$metadata_file" ]; then
+    rm -rf "$tmpdir"
+    echo "Error: metadata.json not found for $ext_uuid after installation"
     return 1
   fi
 
-  echo "$download_url"
-}
-
-install_extension_from_github() {
-  repo="$1"
-  pattern="$2"
-  ext_name="$3"    # directory / extension uuid, e.g. dash-to-dock@micxgx.gmail.com
-
-  echo "-> Installing extension $ext_name from $repo (pattern: $pattern)"
-
-  download_url=$(download_latest_asset "$repo" "$pattern") || return 1
-
-  tmpdir=$(mktemp -d)
-  asset_zip="$tmpdir/asset.zip"
-
-  echo "-> Downloading asset..."
-  curl -L -s "$download_url" -o "$asset_zip"
-
-  echo "-> Unpacking to temporary directory..."
-  unzip -q -o "$asset_zip" -d "$tmpdir/unpack" || true
-
-  found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f -name metadata.json -printf '%h\n' | head -n1 || true)
-  if [ -z "$found_dir" ]; then
-    found_dir=$(find "$tmpdir/unpack" -maxdepth 3 -type f \( -name extension.js -o -name schemas -o -name schemas.gschema.xml \) -printf '%h\n' | head -n1 || true)
-  fi
-  if [ -z "$found_dir" ]; then
-    found_dir="$tmpdir/unpack"
-  fi
-
-  target_dir="$HOME/.local/share/gnome-shell/extensions/$ext_name"
-
-  echo "-> Creating target extension directory: $target_dir"
-  rm -rf "$target_dir" || true
-  mkdir -p "$target_dir"
-
-  echo "-> Copying extension files into $target_dir"
-  cp -a "$found_dir/." "$target_dir/" || true
+  installed_uuid=$(sed -n 's/.*"uuid"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$metadata_file" | head -n1)
+  installed_version=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$metadata_file" | head -n1)
 
   rm -rf "$tmpdir"
 
-  echo "-> Installed $ext_name to $target_dir"
-  echo "-> Extension will be available after restarting GNOME Shell (Alt+F2, type 'r', press Enter)"
+  if [ "$installed_uuid" != "$ext_uuid" ]; then
+    echo "Error: Installed UUID mismatch. Expected $ext_uuid, got $installed_uuid"
+    return 1
+  fi
+
+  if [ -n "$installed_version" ]; then
+    echo "-> Installed $ext_uuid version $installed_version"
+  else
+    echo "-> Installed $ext_uuid (version not declared in metadata)"
+  fi
 }
 
-# Install Dash to Dock from local zip if it exists in Downloads
-if [ -f "$HOME/Downloads/dash-to-dock@micxgx.gmail.com.zip" ]; then
-  install_extension_from_local_zip "$HOME/Downloads/dash-to-dock@micxgx.gmail.com.zip" "dash-to-dock@micxgx.gmail.com" || \
-    echo "Warning: Local Dash-to-Dock installation failed."
-else
-  # Fallback to GitHub download if local zip not found
-  install_extension_from_github "micheleg/dash-to-dock" "dash-to-dock.*\\.zip" "dash-to-dock@micxgx.gmail.com" || \
-    echo "Warning: Dash-to-Dock installation failed or asset not found."
-fi
+install_latest_ego_extension() {
+  ext_uuid="$1"
 
-install_extension_from_github "fflewddur/tophat" "tophat.*\\.zip" "tophat@fflewddur.github.io" || \
-  echo "Warning: TopHat installation failed or asset not found."
+  echo "-> Installing latest shell-compatible release for $ext_uuid"
+  tmpdir=$(mktemp -d)
+  asset_zip="$tmpdir/asset.zip"
 
-install_extension_from_github "home-sweet-gnome/dash-to-panel" "dash-to-panel.*\\.zip" "dash-to-panel@jderose9.github.com" || \
-  echo "Warning: Dash-to-Panel installation failed or asset not found."
+  download_latest_ego_zip "$ext_uuid" "$asset_zip"
+  install_extension_from_zip "$asset_zip" "$ext_uuid"
+
+  rm -rf "$tmpdir"
+  echo "-> $ext_uuid installed using extensions.gnome.org (shell $DOWNLOADED_SHELL_VERSION)"
+}
+
+ensure_extension_enabled() {
+  ext_uuid="$1"
+  enabled_extensions=$(dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || true)
+  if printf '%s' "$enabled_extensions" | grep -F "'$ext_uuid'" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if command -v gnome-extensions >/dev/null 2>&1; then
+    echo "-> Enabling $ext_uuid"
+    gnome-extensions enable "$ext_uuid" || true
+  fi
+}
+
+assert_dconf_value() {
+  key_path="$1"
+  expected="$2"
+  actual=$(dconf read "$key_path" 2>/dev/null || true)
+
+  if [ "$actual" = "$expected" ]; then
+    echo "-> OK: $key_path = $expected"
+    return 0
+  fi
+
+  echo "Warning: $key_path expected $expected but found $actual"
+  return 1
+}
+
+verify_extension_config() {
+  failures=0
+
+  assert_dconf_value "/org/gnome/shell/extensions/dash-to-dock/dock-position" "'BOTTOM'" || failures=1
+  assert_dconf_value "/org/gnome/shell/extensions/dash-to-panel/panel-position" "'TOP'" || failures=1
+  assert_dconf_value "/org/gnome/shell/extensions/dash-to-panel/group-apps" "false" || failures=1
+  assert_dconf_value "/org/gnome/shell/extensions/just-perfection/panel" "true" || failures=1
+
+  if [ "$failures" -ne 0 ]; then
+    echo "Warning: Some extension settings did not match expected values"
+    return 1
+  fi
+
+  echo "-> Extension settings checks passed"
+}
+
+reset_extension_dconf_paths() {
+  dconf reset -f /org/gnome/shell/extensions/dash-to-dock/ || true
+  dconf reset -f /org/gnome/shell/extensions/dash-to-panel/ || true
+  dconf reset -f /org/gnome/shell/extensions/just-perfection/ || true
+}
+
+require_command curl
+require_command unzip
+require_command dconf
+require_command gnome-shell
+
+detect_shell_versions
+
+install_latest_ego_extension "dash-to-dock@micxgx.gmail.com"
+install_latest_ego_extension "dash-to-panel@jderose9.github.com"
+install_latest_ego_extension "just-perfection-desktop@just-perfection"
 
 echo "  GNOME Extensions Installation Completed"
 
 # Load GNOME settings from dconf backup
 echo "-> Loading GNOME settings from dconf backup..."
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 GNOME_BACKUP="$SCRIPT_DIR/gnome_backup.conf"
+
+reset_extension_dconf_paths
 
 if [ -f "$GNOME_BACKUP" ]; then
   dconf load / < "$GNOME_BACKUP"
@@ -138,5 +186,11 @@ else
     exit 1
   fi
 fi
+
+ensure_extension_enabled "dash-to-dock@micxgx.gmail.com"
+ensure_extension_enabled "dash-to-panel@jderose9.github.com"
+ensure_extension_enabled "just-perfection-desktop@just-perfection"
+
+verify_extension_config
 
 echo "  GNOME Configuration Complete!"

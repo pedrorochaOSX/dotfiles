@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-cat <<'catEND' >~/.config/zellij/config.kdl
+cat <<'EOF' >~/.config/zellij/config.kdl
 keybinds clear-defaults=true {
     locked {
         bind "Ctrl g" { SwitchToMode "normal"; }
@@ -452,5 +452,5 @@ show_startup_tips false
 // Default: true
 // 
 // show_release_notes false
-catEND
+EOF
 

@@ -20,7 +20,7 @@ fi
 
 echo "Installing custom zsh theme...";
 mkdir -p ~/.oh-my-zsh/custom/themes
-cat << 'catEND' > ~/.oh-my-zsh/custom/themes/pedrorochaosx.zsh-theme
+cat << 'EOF' > ~/.oh-my-zsh/custom/themes/pedrorochaosx.zsh-theme
 # pedrorochaosx-zsh-theme
 # Use with a dark background and 256-color terminal!
 
@@ -47,9 +47,9 @@ ZSH_THEME_GIT_PROMPT_DIRTY="%{$FG[202]%} x"
 ZSH_THEME_GIT_PROMPT_CLEAN="%{$FG[040]%}"
 ZSH_THEME_RUBY_PROMPT_PREFIX=" %{$FG[239]%}using%{$FG[243]%} ‹"
 ZSH_THEME_RUBY_PROMPT_SUFFIX="›%{$reset_color%}"
-catEND
+EOF
 
-cat << 'catEND' > ~/.zshrc
+cat << 'EOF' > ~/.zshrc
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
@@ -172,7 +172,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-catEND
+EOF
 
 if [ -n "$ZSH_VERSION" ]; then
 	source ~/.zshrc;

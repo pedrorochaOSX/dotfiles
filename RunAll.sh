@@ -13,7 +13,8 @@ declare -A SCRIPT_DESCRIPTIONS=(
   ["ZellijConfig.sh"]="Configure Zellij"
   ["NeovimConfig.sh"]="Configure Neovim"
   ["GetFonts.sh"]="Download and install JetBrainsMono Nerd Font"
-  ["GnomeConfig.sh"]="Update GNOME settings"
+  ["GnomeExtensions.sh"]="Install GNOME extensions"
+  ["GnomeConfig.sh"]="Apply GNOME settings"
 )
 
 SCRIPTS=(
@@ -25,6 +26,7 @@ SCRIPTS=(
   ZellijConfig.sh
   NeovimConfig.sh
   GetFonts.sh
+  GnomeExtensions.sh
   GnomeConfig.sh
 )
 

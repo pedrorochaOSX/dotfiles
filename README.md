@@ -2,6 +2,10 @@
 
 Arch Linux + Fedora + GNOME configuration dotfiles
 
+## Documentation
+
+- Project context: `docs/CONTEXT.md`
+
 ## Quick Setup
 
 Run all configuration scripts from GitHub (interactive):
@@ -45,12 +49,15 @@ sudo dnf copr enable <owner>/<project>
 - **Zsh**: Oh My Zsh + custom theme + aliases
 - **Ghostty**: Terminal configuration (default in RunAll scripts)
 - **Neovim**: LazyVim setup with plugins
-- **GNOME**: Desktop settings + extensions (dash-to-dock, dash-to-panel, just-perfection)
+- **GNOME Extensions**: Download/install shell-compatible releases (dash-to-dock, dash-to-panel, just-perfection)
+- **GNOME Config**: Apply desktop settings from `gnome_backup.conf`
 - **Git**: GitHub authentication setup
 
-GNOME extension behavior:
+GNOME extensions behavior (`GnomeExtensions.sh`):
 - Downloads latest shell-compatible zip from extensions.gnome.org.
 - Installs into `~/.local/share/gnome-shell/extensions/<uuid>`.
+
+GNOME config behavior (`GnomeConfig.sh`):
 - Resets extension-specific dconf paths, applies `gnome_backup.conf`, then verifies key settings.
 
 ## Local Installation

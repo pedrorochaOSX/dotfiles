@@ -1,5 +1,9 @@
 #!/usr/bin/env sh
 
+set -e
+
+mkdir -p ~/.config/ghostty
+
 cat <<'EOF' > ~/.config/ghostty/config
 background = #050505
 foreground = #FFFFFF
@@ -9,3 +13,5 @@ window-decoration = "none"
 confirm-close-surface = false
 window-vsync = false
 EOF
+
+echo "Ghostty configuration complete."

@@ -1,6 +1,10 @@
 #!/usr/bin/env sh
 
-cat <<'EOF' > ~/.alacritty.toml
+set -e
+
+mkdir -p ~/.config/alacritty
+
+cat <<'EOF' > ~/.config/alacritty/alacritty.toml
 [window]
 	padding = { x = 2, y = 2 }
 	decorations = "None"
@@ -27,3 +31,5 @@ cat <<'EOF' > ~/.alacritty.toml
 		{ key = "Down", mods = "Shift", action = "ScrollLineDown" },
 	]
 EOF
+
+echo "Alacritty configuration complete."

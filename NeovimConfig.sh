@@ -10,68 +10,6 @@ cat << 'EOF' > ~/.config/nvim/init.lua
 require("config.lazy")
 EOF
 
-cat << 'EOF' > ~/.config/nvim/lua/config/lazy.lua
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
-    local lazyrepo = "https://github.com/folke/lazy.nvim.git"
-    local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
-    if vim.v.shell_error ~= 0 then
-        vim.api.nvim_echo({
-            { "Failed to clone lazy.nvim:\n", "ErrorMsg" },
-            { out, "WarningMsg" },
-            { "\nPress any key to exit..." },
-        }, true, {})
-        vim.fn.getchar()
-        os.exit(1)
-    end
-end
-vim.opt.rtp:prepend(lazypath)
-
-require("lazy").setup({
-    spec = {
-        { "LazyVim/LazyVim", import = "lazyvim.plugins" },
-        { import = "plugins" },
-        { import = "lazyvim.plugins.extras.editor.snacks_picker" },
-
-        { "ellisonleao/gruvbox.nvim" },
-        {
-            "LazyVim/LazyVim",
-            opts = {
-                colorscheme = "catppuccin",
-            },
-        },
-    },
-    defaults = {
-        lazy = false,
-        version = false,
-    },
-    install = { colorscheme = { "catppuccin" } },
-    checker = {
-        enabled = true,
-        notify = false,
-    },
-    performance = {
-        rtp = {
-            disabled_plugins = {
-                "gzip",
-                "tarPlugin",
-                "tohtml",
-                "tutor",
-                "zipPlugin",
-            },
-        },
-    },
-})
-EOF
-
-cat << 'EOF' > ~/.config/nvim/lua/config/options.lua
-vim.opt.clipboard = "unnamedplus"
-vim.o.autoread = true
-vim.opt.spell = false
-
-vim.g.lazyvim_picker = "snacks"
-EOF
-
 cat << 'EOF' > ~/.config/nvim/lua/config/autocmds.lua
 vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 EOF
@@ -162,27 +100,116 @@ vim.keymap.set("n", "<leader>bU", function()
 end, { desc = "Side by side diff with another buffer" })
 EOF
 
-cat << 'EOF' > ~/.config/nvim/lua/plugins/full-path-line.lua
-return {
-    "nvim-neo-tree/neo-tree.nvim",
-    opts = {
-        filesystem = {
-            window = { position = "right" },
-            filtered_items = {
-                visible = true,
-                hide_dotfiles = false,
-                hide_gitignored = false,
+cat << 'EOF' > ~/.config/nvim/lua/config/lazy.lua
+local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+if not (vim.uv or vim.loop).fs_stat(lazypath) then
+    local lazyrepo = "https://github.com/folke/lazy.nvim.git"
+    local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
+    if vim.v.shell_error ~= 0 then
+        vim.api.nvim_echo({
+            { "Failed to clone lazy.nvim:\n", "ErrorMsg" },
+            { out, "WarningMsg" },
+            { "\nPress any key to exit..." },
+        }, true, {})
+        vim.fn.getchar()
+        os.exit(1)
+    end
+end
+vim.opt.rtp:prepend(lazypath)
+
+require("lazy").setup({
+    spec = {
+        { "LazyVim/LazyVim", import = "lazyvim.plugins" },
+        { import = "plugins" },
+        { import = "lazyvim.plugins.extras.editor.snacks_picker" },
+
+        { "ellisonleao/gruvbox.nvim" },
+        {
+            "LazyVim/LazyVim",
+            opts = {
+                colorscheme = "catppuccin",
             },
         },
-        buffers = {
-            window = { position = "right" },
+    },
+    defaults = {
+        lazy = false,
+        version = false,
+    },
+    install = { colorscheme = { "catppuccin" } },
+    checker = {
+        enabled = true,
+        notify = false,
+    },
+    performance = {
+        rtp = {
+            disabled_plugins = {
+                "gzip",
+                "tarPlugin",
+                "tohtml",
+                "tutor",
+                "zipPlugin",
+            },
         },
-        git_status = {
-            window = { position = "right" },
+    },
+})
+EOF
+
+cat << 'EOF' > ~/.config/nvim/lua/config/options.lua
+vim.opt.clipboard = "unnamedplus"
+vim.o.autoread = true
+vim.opt.spell = false
+
+vim.g.lazyvim_picker = "snacks"
+EOF
+
+cat << 'EOF' > ~/.config/nvim/lua/plugins/conform.lua
+return {
+    {
+        "stevearc/conform.nvim",
+        opts = function(_, opts)
+            opts.format_on_save = false
+            opts.format_after_save = false
+
+            opts.formatters = opts.formatters or {}
+            opts.formatters_by_ft = opts.formatters_by_ft or {}
+            opts.formatters["shfmt"] = nil
+            opts.formatters_by_ft.sh = {}
+
+            opts.formatters.xmllint = {
+                command = "xmllint",
+                args = { "--format", "-" },
+            }
+            opts.formatters_by_ft.xml = { "xmllint" }
+        end,
+        keys = {
+            {
+                "<leader>cx",
+                function()
+                    require("conform").format({ formatters = { "xmllint" }, timeout_ms = 2000 })
+                end,
+                desc = "Format XML (xmllint)",
+            },
         },
     },
 }
 EOF
+
+cat << 'EOF' > ~/.config/nvim/lua/plugins/lualine.lua
+return {
+    {
+        "nvim-lualine/lualine.nvim",
+        opts = function(_, opts)
+            -- Replace LazyVim's custom path with the standard filename component
+            -- and set 'path = 2' which forces the absolute path.
+            opts.sections.lualine_c[4] = {
+                "filename",
+                path = 2,
+            }
+        end,
+    },
+}
+EOF
+
 
 cat << 'EOF' > ~/.config/nvim/lua/plugins/neo-tree.lua
 return {
@@ -206,51 +233,13 @@ return {
 }
 EOF
 
-cat << 'EOF' > ~/.config/nvim/lua/plugins/no-animations.lua
+cat <<'EOF' > ~/.config/nvim/lua/plugins/snacks.lua
 return {
     {
         "folke/snacks.nvim",
         opts = {
             animate = { enabled = false },
             scroll = { enabled = false },
-        },
-    },
-}
-EOF
-
-cat << 'EOF' > ~/.config/nvim/lua/plugins/no-autoformat.lua
-return {
-    {
-        "stevearc/conform.nvim",
-        opts = {
-            format_on_save = false,
-            format_after_save = false,
-        },
-    },
-}
-EOF
-
-cat <<'EOF' > ~/.config/nvim/lua/plugins/no-autoformat-sh.lua
-return {
-    {
-        "stevearc/conform.nvim",
-        opts = function(_, opts)
-            opts.formatters = opts.formatters or {}
-            opts.formatters_by_ft = opts.formatters_by_ft or {}
-            opts.formatters["shfmt"] = nil
-            opts.formatters_by_ft.sh = {}
-            opts.format_on_save = opts.format_on_save or {}
-            opts.format_on_save.sh = false
-        end,
-    },
-}
-EOF
-
-cat <<'EOF' > ~/.config/nvim/lua/plugins/snacks-find-files.lua
-return {
-    {
-        "folke/snacks.nvim",
-        opts = {
             picker = {
                 sources = {
                     files = {
@@ -258,32 +247,6 @@ return {
                         ignored = true,
                     },
                 },
-            },
-        },
-    },
-}
-EOF
-
-cat <<'EOF' > ~/.config/nvim/lua/plugins/xml-formatter.lua
-return {
-    {
-        "stevearc/conform.nvim",
-        opts = function(_, opts)
-            opts.formatters = opts.formatters or {}
-            opts.formatters_by_ft = opts.formatters_by_ft or {}
-            opts.formatters.xmllint = {
-                command = "xmllint",
-                args = { "--format", "-" },
-            }
-            opts.formatters_by_ft.xml = { "xmllint" }
-        end,
-        keys = {
-            {
-                "<leader>cx",
-                function()
-                    require("conform").format({ formatters = { "xmllint" }, timeout_ms = 2000 })
-                end,
-                desc = "Format XML (xmllint)",
             },
         },
     },

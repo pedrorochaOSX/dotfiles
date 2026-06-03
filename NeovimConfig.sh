@@ -127,7 +127,7 @@ require("lazy").setup({
         {
             "LazyVim/LazyVim",
             opts = {
-                colorscheme = "catppuccin",
+                colorscheme = "catppuccin-mocha",
             },
         },
     },
@@ -135,7 +135,7 @@ require("lazy").setup({
         lazy = false,
         version = false,
     },
-    install = { colorscheme = { "catppuccin" } },
+    install = { colorscheme = { "catppuccin-mocha", "default" } },
     checker = {
         enabled = true,
         notify = false,
@@ -155,11 +155,13 @@ require("lazy").setup({
 EOF
 
 cat << 'EOF' > ~/.config/nvim/lua/config/options.lua
-vim.opt.clipboard = "unnamedplus"
 vim.o.autoread = true
 vim.opt.spell = false
-
+vim.opt.clipboard = "unnamedplus"
 vim.g.lazyvim_picker = "snacks"
+vim.g.loaded_sql_completion = 1
+vim.g.omni_sql_no_default_maps = 1
+vim.g.root_spec = { "cwd" }
 EOF
 
 cat << 'EOF' > ~/.config/nvim/lua/plugins/conform.lua

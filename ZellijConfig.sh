@@ -19,11 +19,10 @@ keybinds clear-defaults=true {
         bind "j" { MoveFocus "down"; }
         bind "k" { MoveFocus "up"; }
         bind "l" { MoveFocus "right"; }
-        bind "n" { NewPane; SwitchToMode "normal"; }
-        bind "p" { SwitchFocus; }
+        bind "p" { NewPane; SwitchToMode "normal"; }
         bind "Ctrl p" { SwitchToMode "normal"; }
         bind "r" { NewPane "right"; SwitchToMode "normal"; }
-        bind "w" { ToggleFloatingPanes; SwitchToMode "normal"; }
+        bind "w" { CloseFocus; SwitchToMode "normal"; }
         bind "z" { TogglePaneFrames; SwitchToMode "normal"; }
     }
     tab {
@@ -47,7 +46,7 @@ keybinds clear-defaults=true {
         bind "j" { GoToNextTab; }
         bind "k" { GoToPreviousTab; }
         bind "l" { GoToNextTab; }
-        bind "t" { NewTab; SwitchToMode "normal"; }
+        bind "t" { NewTab { name " "; }; SwitchToMode "normal"; }
         bind "r" { SwitchToMode "renametab"; TabNameInput 0; }
         bind "s" { ToggleActiveSyncTab; SwitchToMode "normal"; }
         bind "Ctrl t" { SwitchToMode "normal"; }
@@ -129,6 +128,10 @@ keybinds clear-defaults=true {
         }
     }
     shared_except "locked" {
+        bind "Ctrl q" { Quit; }
+        bind "Ctrl g" { SwitchToMode "locked"; }
+        bind "Shift Alt s" { MoveTab "left"; }
+        bind "Shift Alt f" { MoveTab "right"; }
         bind "Alt s" { MoveFocusOrTab "left"; }
         bind "Alt d" { MoveFocus "down"; }
         bind "Alt e" { MoveFocus "up"; }
@@ -138,16 +141,14 @@ keybinds clear-defaults=true {
         bind "Alt =" { Resize "Increase"; }
         bind "Alt [" { PreviousSwapLayout; }
         bind "Alt ]" { NextSwapLayout; }
-        bind "Alt p" { ToggleFloatingPanes; }
-        bind "Ctrl g" { SwitchToMode "locked"; }
         bind "Alt h" { MoveFocusOrTab "left"; }
         bind "Alt j" { MoveFocus "down"; }
         bind "Alt k" { MoveFocus "up"; }
         bind "Alt l" { MoveFocusOrTab "right"; }
-        bind "Alt n" { NewPane; }
-        bind "Shift Alt s" { MoveTab "left"; }
-        bind "Shift Alt f" { MoveTab "right"; }
-        bind "Ctrl q" { Quit; }
+        bind "Alt t" { NewTab { name " "; }; SwitchToMode "normal"; }
+        bind "Alt r" { SwitchToMode "renametab"; TabNameInput 0; }
+        bind "Alt p" { NewPane; }
+        bind "Alt w" { CloseFocus; }
     }
     shared_except "locked" "move" {
         bind "Ctrl m" { SwitchToMode "move"; }
@@ -186,7 +187,10 @@ keybinds clear-defaults=true {
         bind "down" { ScrollDown; }
         bind "up" { ScrollUp; }
         bind "right" { PageScrollDown; }
+        bind "Ctrl b" { PageScrollUp; }
+        bind "Ctrl c" { ScrollToBottom; SwitchToMode "normal"; }
         bind "d" { HalfPageScrollDown; }
+        bind "Ctrl f" { PageScrollDown; }
         bind "h" { PageScrollUp; }
         bind "j" { ScrollDown; }
         bind "k" { ScrollUp; }
@@ -222,7 +226,7 @@ keybinds clear-defaults=true {
         bind "," { SwitchToMode "renametab"; }
         bind "[" { SwitchToMode "scroll"; }
         bind "Ctrl b" { Write 2; SwitchToMode "normal"; }
-        bind "c" { NewTab; SwitchToMode "normal"; }
+        bind "c" { NewTab { name " "; }; SwitchToMode "normal"; }
         bind "h" { MoveFocus "left"; SwitchToMode "normal"; }
         bind "j" { MoveFocus "down"; SwitchToMode "normal"; }
         bind "k" { MoveFocus "up"; SwitchToMode "normal"; }
